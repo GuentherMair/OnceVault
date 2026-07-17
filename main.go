@@ -26,6 +26,12 @@ import (
 //go:embed web/index.html
 var indexHTML []byte
 
+// faviconICO is the vault-wheel icon (PNG-in-ICO, 16/32/48px), embedded at
+// build time and served byte-identical at GET /favicon.ico.
+//
+//go:embed web/favicon.ico
+var faviconICO []byte
+
 func main() {
 	os.Exit(run())
 }
@@ -111,7 +117,7 @@ func cleanup(cfg *config.Config, st store.Store) int {
 func serve(cfg *config.Config, st store.Store) int {
 	httpSrv := &http.Server{
 		Addr:              cfg.Listen,
-		Handler:           server.New(cfg, st, indexHTML),
+		Handler:           server.New(cfg, st, indexHTML, faviconICO),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       time.Minute,
 		WriteTimeout:      time.Minute,

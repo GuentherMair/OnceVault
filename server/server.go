@@ -1,5 +1,5 @@
 // Package server implements the OnceVault HTTP API per the frozen contract
-// in docs/PLAN_STEP_0.md §0.2: three routes, exact error strings, no-store
+// in docs/PLAN_STEP_0.md §0.2: four routes, exact error strings, no-store
 // caching, trusted-proxy-aware client IPs, and CIDR blocking on all routes.
 package server
 
@@ -50,11 +50,12 @@ var (
 )
 
 // Server is the OnceVault HTTP handler: panic recovery → client-IP
-// resolution → blocked-CIDR check → strict three-route mux.
+// resolution → blocked-CIDR check → strict four-route mux.
 type Server struct {
 	cfg     *config.Config
 	st      store.Store
 	index   []byte
+	favicon []byte
 	mux     *http.ServeMux
 	limiter *Limiter
 	handler http.Handler
@@ -62,12 +63,14 @@ type Server struct {
 	lastPurge atomic.Int64
 }
 
-// New builds the full middleware+mux chain. index is the frontend page bytes.
-func New(cfg *config.Config, st store.Store, index []byte) *Server {
-	s := &Server{cfg: cfg, st: st, index: index, limiter: NewLimiter()}
+// New builds the full middleware+mux chain. index is the frontend page bytes,
+// favicon the embedded ICO bytes.
+func New(cfg *config.Config, st store.Store, index, favicon []byte) *Server {
+	s := &Server{cfg: cfg, st: st, index: index, favicon: favicon, limiter: NewLimiter()}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleIndex)
+	mux.HandleFunc("GET /favicon.ico", s.handleFavicon)
 	mux.HandleFunc("POST /api/secrets", s.handleCreate)
 	mux.HandleFunc("GET /api/secrets/{guid}", s.handleTake)
 	s.mux = mux
@@ -192,6 +195,11 @@ func inNets(nets []netip.Prefix, a netip.Addr) bool {
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(s.index)
+}
+
+func (s *Server) handleFavicon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/x-icon")
+	w.Write(s.favicon)
 }
 
 type createRequest struct {

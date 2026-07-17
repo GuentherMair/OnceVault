@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.ico">
 <title>OnceVault</title>
 <style>
 /* ---- theme tokens: light is the base, dark applies via prefers-color-scheme
@@ -120,17 +121,41 @@ form{
 }
 .pill{
   display:flex;align-items:center;gap:8px;
-  width:100%;max-width:700px;height:48px;
+  width:100%;max-width:700px;min-height:48px;
   padding:0 10px 0 16px; /* left keeps the input's 16px breathing room; right matches the select's top/bottom */
-  border:1px solid var(--border);border-radius:9999px;
+  /* fixed radius = half the single-line height; 9999px would balloon as the
+     textarea grows and curl the border into the text */
+  border:1px solid var(--border);border-radius:24px;
   background:var(--pill-bg);
   transition:box-shadow .12s,border-color .12s;
 }
 .pill:hover,.pill:focus-within{box-shadow:var(--pill-shadow);border-color:transparent}
-.pill input{
-  flex:1;min-width:0;height:100%;
-  border:0;outline:0;background:transparent;color:inherit;
-  font-size:16px;
+.secret-wrap{flex:1;min-width:0;position:relative;display:flex}
+.pill textarea{
+  width:100%;min-width:0;
+  border:0;outline:0;background:transparent;
+  /* monospace while masked: every glyph gets the same advance as the mask's
+     dots, so caret/selection/wrap align exactly; .revealed restores the page
+     font — the only state in which the text is actually read. */
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:16px;line-height:24px;
+  padding:12px 0;height:48px; /* one line by default; JS grows it up to 15 lines */
+  resize:none;overflow-y:hidden;
+  /* masked by default: glyphs transparent (caret stays), #mask paints the dots.
+     -webkit-text-security is no use here — it masks newlines too, collapsing
+     multi-line content onto a single line of dots. */
+  color:transparent;caret-color:var(--fg);
+}
+.pill textarea.revealed{color:inherit;font-family:inherit}
+/* the placeholder is always visible text — keep it in the page font */
+.pill textarea::placeholder{color:var(--muted);font-family:arial,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#mask{ /* dot-for-glyph mirror of the textarea, newlines kept; never any plaintext */
+  position:absolute;inset:0;overflow:hidden;pointer-events:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; /* = masked textarea */
+  font-size:16px;line-height:24px;
+  padding:12px 0;
+  white-space:pre-wrap;overflow-wrap:break-word;
+  color:var(--fg);
 }
 .pill .iconbtn{padding:6px}
 .pill .iconbtn svg{width:20px;height:20px}
@@ -228,10 +253,13 @@ dialog li{margin-bottom:4px}
 
   <form id="form" autocomplete="off">
     <div class="pill">
-      <input id="secret" type="password" placeholder="Secret" aria-label="Secret"
-             autocomplete="one-time-code" autocapitalize="off" autocorrect="off"
-             spellcheck="false"
-             data-lpignore="true" data-1p-ignore data-bwignore>
+      <div class="secret-wrap">
+        <textarea id="secret" rows="1" placeholder="Secret" aria-label="Secret"
+               autocomplete="one-time-code" autocapitalize="off" autocorrect="off"
+               spellcheck="false"
+               data-lpignore="true" data-1p-ignore data-bwignore></textarea>
+        <pre id="mask" aria-hidden="true"></pre>
+      </div>
       <button id="eyeBtn" class="iconbtn" type="button" title="Show secret" aria-label="Toggle secret visibility">
         <svg id="iEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line id="iEyeSlash" x1="2" y1="2" x2="22" y2="22"/></svg>
       </button>
@@ -269,7 +297,7 @@ dialog li{margin-bottom:4px}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
   <h2 id="helpTitle">OnceVault — share a secret once, then it burns.</h2>
-  <p>OnceVault lets you safely share a secret with exactly one person — it's encrypted
+  <p>OnceVault lets you safely share a secret with exactly one recipient — it's encrypted
   in your browser, only one recipient can open it, and the link self-destructs the
   moment they read it.</p>
   <blockquote>And if someone else got the link you will know: the message will already be gone!</blockquote>
@@ -279,7 +307,7 @@ dialog li{margin-bottom:4px}
   ID with an expiry you pick (1 hour to 7 days). The decryption key travels
   <strong>only</strong> in the <code>#fragment</code> of the share link, which browsers
   never send to any server — OnceVault couldn't read your secret even if it wanted to.
-  The first person to open the link gets the secret; the ciphertext is deleted in the
+  The first recipient to open the link gets the secret; the ciphertext is deleted in the
   same moment. Expired secrets are deleted unread.</p>
   <p><strong>Durations:</strong> 1 hour, 4 hours, 8 hours, 1 day, 2 days, 5 days or 7 days.
   Whatever is not retrieved in time is deleted unread.</p>
@@ -299,7 +327,7 @@ dialog li{margin-bottom:4px}
 'use strict';
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  var form=$('form'), input=$('secret'), durationSel=$('duration'),
+  var form=$('form'), input=$('secret'), mask=$('mask'), durationSel=$('duration'),
       eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeSlash=$('iEyeSlash'),
       out=$('out'), outText=$('outText'),
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
@@ -353,6 +381,9 @@ dialog li{margin-bottom:4px}
     out.className='out out-'+state;   /* encrypt | decrypt | error */
     outText.textContent=text;
     input.value='';                  /* reset input first */
+    input.style.height='';            /* back to the one-line default */
+    input.style.overflowY='';
+    renderMask();
     form.hidden=true;                 /* then hide it */
     out.hidden=false;
   }
@@ -372,13 +403,45 @@ dialog li{margin-bottom:4px}
     }).catch(function(){});
   });
 
-  /* ---- eye toggle ---- */
+  /* ---- eye toggle: masking = transparent glyphs + dot mirror in #mask ---- */
   eyeBtn.addEventListener('click',function(){
-    var reveal=input.type==='password';
-    input.type=reveal?'text':'password';
+    var reveal=!input.classList.contains('revealed');
+    input.classList.toggle('revealed',reveal);
     eyeBtn.classList.toggle('revealed',reveal);
     eyeBtn.title=reveal?'Hide secret':'Show secret';
+    renderMask();
+    autosize();                      /* mono vs page font wrap at different points */
     input.focus();
+  });
+
+  /* renderMask mirrors the value into #mask as one dot per character, newlines
+     kept — so the masked view shows the real line structure without plaintext. */
+  function renderMask(){
+    mask.textContent=input.classList.contains('revealed')?'':input.value.replace(/[^\n]/g,'•');
+    mask.scrollTop=input.scrollTop;
+  }
+  input.addEventListener('scroll',function(){ mask.scrollTop=input.scrollTop; });
+
+  /* ---- textarea auto-grow: one line by default, cap at 15 lines then scroll ---- */
+  var MAX_INPUT_H=15*24+24; /* 15 lines x 24px line-height + 24px vertical padding */
+  function autosize(){
+    input.style.height='auto';
+    input.style.height=Math.min(input.scrollHeight,MAX_INPUT_H)+'px';
+    input.style.overflowY=input.scrollHeight>MAX_INPUT_H?'auto':'hidden';
+  }
+  input.addEventListener('input',function(){ autosize(); renderMask(); });
+
+  /* ENTER submits (as the old single-line input did); ALT+ENTER inserts a newline */
+  input.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'||e.isComposing) return;
+    e.preventDefault();
+    if(e.altKey){
+      input.setRangeText('\n',input.selectionStart,input.selectionEnd,'end');
+      autosize();                     /* setRangeText fires no input event */
+      renderMask();
+    }else if(input.value){
+      encrypt();
+    }
   });
 
   /* ---- duration dropdown ---- */
@@ -396,7 +459,7 @@ dialog li{margin-bottom:4px}
   var busy=false;
   form.addEventListener('submit',function(e){
     e.preventDefault();               /* native form submit prevented */
-    if(input.value) encrypt();        /* ENTER / click no-op on empty input */
+    if(input.value) encrypt();        /* button click no-op on empty input (ENTER handled on keydown) */
   });
   function encrypt(){
     if(busy) return;

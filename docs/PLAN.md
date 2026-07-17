@@ -19,7 +19,7 @@ via a cron-callable cleanup subcommand.
 1. All encryption/decryption client-side (Web Crypto API, AES-256-GCM, 256-bit key, random 12-byte IV).
 2. Plaintext and key never leave the browser; key only ever in the `#fragment`; retrieval GET uses the GUID only.
 3. Minimal supply chain: frontend has **zero** external assets/libraries (inline SVG icons, no CDN); backend deps limited to 4 DB drivers + yaml.v3; UUIDv4 hand-rolled from `crypto/rand`.
-4. Only defined routes served — `GET /` (exact), `POST /api/secrets`, `GET /api/secrets/{guid}`; everything else 404.
+4. Only defined routes served — `GET /` (exact), `GET /favicon.ico`, `POST /api/secrets`, `GET /api/secrets/{guid}`; everything else 404.
 
 ## Architecture
 
@@ -36,6 +36,7 @@ OnceVault/
 ├── server/server.go          # strict mux, panic recovery, store-error → status mapping, throttled purge
 ├── server/ratelimit.go       # CIDR rules, fixed 1-min window per IP, trusted_proxies resolution
 ├── web/index.html            # ONE self-contained file (HTML+CSS+JS, inline SVG), go:embed
+├── web/favicon.ico           # vault-wheel icon (PNG-in-ICO 16/32/48), generated, go:embed
 ├── config.example.yaml       # commented, incl. max_secret_bytes pros/cons
 ├── config.example.json
 ├── README.md / INSTALL.md / CLAUDE.md
@@ -49,7 +50,8 @@ extension · `max_secret_bytes` default 16384 · trusted-proxy-aware client IP �
 `"-"` blocks all routes, numeric limits meter POST only, `default: 0` → warn + 6000/min ·
 Redis pure native TTL (410 never occurs on Redis) · purge throttled ≤1/min async ·
 cleanup CLI subcommand with per-DB vacuum · plain HTTP behind TLS-terminating reverse
-proxy · single-line password input · sqlite-only unit tests · semantic status codes
+proxy · multi-line masked textarea input (ENTER encrypts, ALT+ENTER newline, auto-grow
+to 15 lines then scroll — see PLAN_STEP_4) · sqlite-only unit tests · semantic status codes
 (POST 201/400/403/429 · GET 200/410/404/500) · sparse invariant-focused comments.
 
 ## Build steps and waves
@@ -72,4 +74,4 @@ reports to the user and waits for go-ahead.
 
 - Unit coverage: config parsing/fallbacks; CIDR limiter (0 / - / n / default / longest-prefix / trusted-proxy); POST validation matrix; GET outcome matrix (200/410/404/500); sqlite read-once atomicity (concurrent TakeOnce → exactly one winner); purge throttle.
 - E2E (wave 3): start server with sqlite config → POST WebCrypto-compatible ciphertext, GET once (200), GET again (404), expired fixture (410), unknown route (404), oversize body (400), rate-limit burst (429), `cleanup` run.
-- Manual browser checklist: encrypt → copy link → open in second window → green decrypt; second open → red burned error; eye toggle; ENTER-on-empty no-op; theme cycle persistence; help dialog; copy/close; responsive shrink; devtools network tab shows no plaintext/key.
+- Manual browser checklist: encrypt → copy link → open in second window → green decrypt; second open → red burned error; eye toggle; ENTER-on-empty no-op; multi-line input (paste and ALT+ENTER grow the field, masked dots keep the line structure and align with the caret, 15-line cap scrolls, newlines survive encrypt→decrypt); theme cycle persistence; help dialog; copy/close; responsive shrink; devtools network tab shows no plaintext/key.

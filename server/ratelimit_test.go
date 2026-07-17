@@ -90,7 +90,7 @@ func TestLimiterPrunesStaleWindows(t *testing.T) {
 
 func TestRateLimitDefaultExceeded(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{"rate_limit": map[string]any{"default": 2}})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	body := postBody(validSecret, validIV, 24)
 	for i := 0; i < 2; i++ {
@@ -111,7 +111,7 @@ func TestRateLimitDefaultExceeded(t *testing.T) {
 
 func TestRateLimitCountsOnlyPost(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{"rate_limit": map[string]any{"default": 1}})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	// GETs never consume or hit the POST budget.
 	for i := 0; i < 5; i++ {
@@ -140,7 +140,7 @@ func TestRateLimitUnlimitedCIDR(t *testing.T) {
 		"default": 1,
 		"rules":   map[string]string{"10.0.0.0/8": "0"},
 	}})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	for i := 0; i < 5; i++ {
 		rr := do(t, srv, "POST", "/api/secrets", "10.1.2.3:1", postBody(validSecret, validIV, 24), nil)
@@ -155,7 +155,7 @@ func TestBlockedCIDRAllRoutes(t *testing.T) {
 		"default": 60,
 		"rules":   map[string]string{"192.0.2.0/24": "-"},
 	}})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	targets := []struct{ method, path, body string }{
 		{"GET", "/", ""},
@@ -182,7 +182,7 @@ func TestLongestPrefixOverride(t *testing.T) {
 			"10.1.0.0/16": "0",
 		},
 	}})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 	body := postBody(validSecret, validIV, 24)
 
 	// 10.1.x.x: the more specific /16 "0" (unlimited) wins over the /8 "1".
@@ -215,7 +215,7 @@ func TestXForwardedForResolution(t *testing.T) {
 				},
 			},
 		})
-		return New(cfg, memStore(t), []byte(testIndex))
+		return New(cfg, memStore(t), []byte(testIndex), testFavicon)
 	}
 
 	t.Run("XFF honored from trusted peer", func(t *testing.T) {
@@ -256,7 +256,7 @@ func TestXForwardedForResolution(t *testing.T) {
 			"trusted_proxies": []string{"127.0.0.0/8"},
 			"rate_limit":      map[string]any{"default": 1},
 		})
-		srv := New(cfg, memStore(t), []byte(testIndex))
+		srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 		body := postBody(validSecret, validIV, 24)
 
 		if rr := do(t, srv, "POST", "/api/secrets", "127.0.0.2:1", body, map[string]string{"X-Forwarded-For": "198.51.100.1"}); rr.Code != http.StatusCreated {

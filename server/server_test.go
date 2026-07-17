@@ -24,6 +24,8 @@ import (
 
 const testIndex = "<!doctype html><title>test index</title>"
 
+var testFavicon = []byte{0, 0, 1, 0} // any bytes; served verbatim
+
 // --- helpers ---------------------------------------------------------------
 
 // loadCfg round-trips a config through config.Load so tests exercise the real
@@ -166,7 +168,7 @@ func (f *fakeStore) Close() error                 { return nil }
 
 func TestPostValidationMatrix(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{"max_secret_bytes": 16})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	big := base64.StdEncoding.EncodeToString(make([]byte, 17))
 	shortIV := base64.StdEncoding.EncodeToString([]byte("short"))
@@ -204,7 +206,7 @@ func TestPostValidationMatrix(t *testing.T) {
 // first one in contract order (secret before iv before duration).
 func TestPostValidationOrder(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:4711", `{"secret":"","iv":"x","duration":9}`, nil)
 	wantError(t, rr, http.StatusBadRequest, msgSecretEmpty)
@@ -216,7 +218,7 @@ func TestPostValidationOrder(t *testing.T) {
 func TestPostSuccess(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
 	st := memStore(t)
-	srv := New(cfg, st, []byte(testIndex))
+	srv := New(cfg, st, []byte(testIndex), testFavicon)
 
 	rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:4711", postBody(validSecret, validIV, 24), nil)
 	if rr.Code != http.StatusCreated {
@@ -256,7 +258,7 @@ func TestPostDuplicateRetry(t *testing.T) {
 
 	t.Run("one collision retries with fresh guid", func(t *testing.T) {
 		fs := &fakeStore{putErrs: []error{store.ErrDuplicate}}
-		srv := New(cfg, fs, []byte(testIndex))
+		srv := New(cfg, fs, []byte(testIndex), testFavicon)
 		rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:1", postBody(validSecret, validIV, 24), nil)
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("status = %d, want 201 (body %q)", rr.Code, rr.Body.String())
@@ -268,7 +270,7 @@ func TestPostDuplicateRetry(t *testing.T) {
 
 	t.Run("two collisions fail with 500", func(t *testing.T) {
 		fs := &fakeStore{putErrs: []error{store.ErrDuplicate, store.ErrDuplicate}}
-		srv := New(cfg, fs, []byte(testIndex))
+		srv := New(cfg, fs, []byte(testIndex), testFavicon)
 		rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:1", postBody(validSecret, validIV, 24), nil)
 		wantError(t, rr, http.StatusInternalServerError, msgBackend)
 	})
@@ -277,7 +279,7 @@ func TestPostDuplicateRetry(t *testing.T) {
 func TestPostStoreFailure(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
 	fs := &fakeStore{putErrs: []error{errors.New("disk on fire")}}
-	srv := New(cfg, fs, []byte(testIndex))
+	srv := New(cfg, fs, []byte(testIndex), testFavicon)
 	rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:1", postBody(validSecret, validIV, 24), nil)
 	wantError(t, rr, http.StatusInternalServerError, msgBackend)
 }
@@ -289,7 +291,7 @@ func TestGetMatrix(t *testing.T) {
 
 	t.Run("200 and row gone after", func(t *testing.T) {
 		cfg := loadCfg(t, map[string]any{})
-		srv := New(cfg, memStore(t), []byte(testIndex))
+		srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 		rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:1", postBody(validSecret, validIV, 1), nil)
 		var v struct {
 			GUID string `json:"guid"`
@@ -320,7 +322,7 @@ func TestGetMatrix(t *testing.T) {
 	t.Run("410 expired fixture", func(t *testing.T) {
 		cfg := loadCfg(t, map[string]any{})
 		st := memStore(t)
-		srv := New(cfg, st, []byte(testIndex))
+		srv := New(cfg, st, []byte(testIndex), testFavicon)
 		const guid = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 		if err := st.Put(context.Background(), guid, validSecret, validIV, time.Now().Unix()-10); err != nil {
 			t.Fatalf("fixture put: %v", err)
@@ -334,7 +336,7 @@ func TestGetMatrix(t *testing.T) {
 
 	t.Run("404 unknown guid", func(t *testing.T) {
 		cfg := loadCfg(t, map[string]any{})
-		srv := New(cfg, memStore(t), []byte(testIndex))
+		srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 		rr := do(t, srv, "GET", "/api/secrets/"+unknownGUID, "192.0.2.10:1", "", nil)
 		wantError(t, rr, http.StatusNotFound, msgBurned)
 	})
@@ -342,7 +344,7 @@ func TestGetMatrix(t *testing.T) {
 	t.Run("404 malformed guid short-circuits without store hit", func(t *testing.T) {
 		cfg := loadCfg(t, map[string]any{})
 		fs := &fakeStore{}
-		srv := New(cfg, fs, []byte(testIndex))
+		srv := New(cfg, fs, []byte(testIndex), testFavicon)
 		for _, g := range []string{"nope", "01234567-89ab-4cde-8f01-23456789abcg", "0123456789ab4cde8f0123456789abcd"} {
 			rr := do(t, srv, "GET", "/api/secrets/"+g, "192.0.2.10:1", "", nil)
 			wantError(t, rr, http.StatusNotFound, msgBurned)
@@ -360,7 +362,7 @@ func TestGetMatrix(t *testing.T) {
 		fs := &fakeStore{takeFn: func(string) (string, string, error) {
 			return "", "", errors.New("backend melted")
 		}}
-		srv := New(cfg, fs, []byte(testIndex))
+		srv := New(cfg, fs, []byte(testIndex), testFavicon)
 		rr := do(t, srv, "GET", "/api/secrets/"+unknownGUID, "192.0.2.10:1", "", nil)
 		wantError(t, rr, http.StatusInternalServerError, msgBackend)
 	})
@@ -368,7 +370,7 @@ func TestGetMatrix(t *testing.T) {
 
 func TestReadOnceOverHTTP(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	rr := do(t, srv, "POST", "/api/secrets", "192.0.2.10:1", postBody(validSecret, validIV, 168), nil)
 	var v struct {
@@ -390,7 +392,7 @@ func TestReadOnceOverHTTP(t *testing.T) {
 
 func TestRouting(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
-	srv := New(cfg, memStore(t), []byte(testIndex))
+	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
 	t.Run("index served on exact root", func(t *testing.T) {
 		rr := do(t, srv, "GET", "/", "192.0.2.10:1", "", nil)
@@ -405,6 +407,19 @@ func TestRouting(t *testing.T) {
 		}
 		if rr.Body.String() != testIndex {
 			t.Fatalf("body = %q, want index bytes", rr.Body.String())
+		}
+	})
+
+	t.Run("favicon served", func(t *testing.T) {
+		rr := do(t, srv, "GET", "/favicon.ico", "192.0.2.10:1", "", nil)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("GET /favicon.ico = %d, want 200", rr.Code)
+		}
+		if ct := rr.Header().Get("Content-Type"); ct != "image/x-icon" {
+			t.Fatalf("Content-Type = %q, want image/x-icon", ct)
+		}
+		if rr.Body.String() != string(testFavicon) {
+			t.Fatalf("body = %q, want favicon bytes", rr.Body.String())
 		}
 	})
 
@@ -431,7 +446,7 @@ func TestRouting(t *testing.T) {
 func TestPanicRecovery(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
 	fs := &fakeStore{takeFn: func(string) (string, string, error) { panic("handler exploded") }}
-	srv := New(cfg, fs, []byte(testIndex))
+	srv := New(cfg, fs, []byte(testIndex), testFavicon)
 	rr := do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "192.0.2.10:1", "", nil)
 	wantError(t, rr, http.StatusInternalServerError, msgBackend)
 }
@@ -441,7 +456,7 @@ func TestPanicRecovery(t *testing.T) {
 func TestPurgeThrottle(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
 	fs := &fakeStore{}
-	srv := New(cfg, fs, []byte(testIndex))
+	srv := New(cfg, fs, []byte(testIndex), testFavicon)
 
 	const guid = "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd"
 	do(t, srv, "GET", guid, "192.0.2.10:1", "", nil)
@@ -462,7 +477,7 @@ func TestPurgeThrottle(t *testing.T) {
 func TestPurgeFailureNotSurfaced(t *testing.T) {
 	cfg := loadCfg(t, map[string]any{})
 	fs := &fakeStore{purgeErr: errors.New("purge broke")}
-	srv := New(cfg, fs, []byte(testIndex))
+	srv := New(cfg, fs, []byte(testIndex), testFavicon)
 	rr := do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "192.0.2.10:1", "", nil)
 	wantError(t, rr, http.StatusNotFound, msgBurned)
 }

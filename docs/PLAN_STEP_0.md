@@ -27,6 +27,14 @@ prefer plain 404 to avoid enumeration hints).
 Serves the embedded `web/index.html` (`Content-Type: text/html; charset=utf-8`).
 `Cache-Control: no-store` on every response (page and API).
 
+### `GET /favicon.ico` (exact path only)
+Serves the embedded `web/favicon.ico` byte-identical (`Content-Type: image/x-icon`).
+The file is a PNG-in-ICO container (16/32/48 px) showing a white vault wheel (ring +
+cross spokes + hub) on a rounded square in the frontend focus blue `#1a73e8`; it is
+generated procedurally (stdlib-only Go script, supersampled) and committed. Linked from
+`index.html` via `<link rel="icon" href="/favicon.ico">`. Amendment 2026-07-17: this is
+the fourth route; it is subject to the same CIDR blocking and `no-store` as all others.
+
 ### `POST /api/secrets`
 Request body (JSON, size-capped at `ceil(max_secret_bytes*4/3) + 1024` bytes via `http.MaxBytesReader`):
 ```json

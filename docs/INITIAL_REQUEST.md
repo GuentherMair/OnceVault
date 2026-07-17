@@ -74,3 +74,12 @@ The following were added after the original request and are to be treated as bin
 requirements:
 
 - the focus should always go back to the input field, whenever any action is completed
+- the secret input is a **multi-line** field (a `<textarea>`, not a password `<input>`,
+  which cannot hold pasted multi-line content):
+  - one text line tall by default, visually identical to the original single-line pill
+  - ENTER still starts the encryption procedure; ALT+ENTER inserts an actual newline
+  - the field grows with its content (manual newlines or pasted multi-line text) up to
+    15 lines, then scrolls
+  - the eye icon still toggles masked (default) ↔ revealed content
+  - the pill's corner radius stays fixed at the single-line value while the field grows
+    (no ballooning fully-rounded corners)
