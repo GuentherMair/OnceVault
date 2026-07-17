@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 )
 
 // Sentinel errors every Store implementation must map its driver errors onto.
@@ -30,18 +31,32 @@ type Store interface {
 	Close() error
 }
 
-// Open returns the Store for the configured driver ("sqlite", "redis", "mysql", "postgres").
+// registry holds the constructors contributed by whichever driver files were
+// compiled in via build tags (driver_sqlite / driver_mysql / driver_postgres /
+// driver_redis, or driver_all for the full set).
+var registry = map[string]func(string) (Store, error){}
+
+// Open returns the Store for the configured driver name. The driver must have
+// been enabled at build time via the corresponding build tag; otherwise an
+// "unknown db driver" error is returned.
 func Open(driver, dsn string) (Store, error) {
-	switch driver {
-	case "sqlite":
-		return NewSQLite(dsn)
-	case "redis":
-		return NewRedis(dsn)
-	case "mysql":
-		return NewMySQL(dsn)
-	case "postgres":
-		return NewPostgres(dsn)
-	default:
-		return nil, fmt.Errorf("unknown db driver %q", driver)
+	b, ok := registry[driver]
+	if !ok {
+		return nil, fmt.Errorf("unknown db driver %q (built: %s)", driver, builtDrivers())
 	}
+	return b(dsn)
+}
+
+// builtDrivers returns the sorted list of drivers enabled at build time, for
+// the error message above.
+func builtDrivers() string {
+	names := make([]string, 0, len(registry))
+	for n := range registry {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	if len(names) == 0 {
+		return "<none — rebuild with -tags driver_all or -tags driver_<name>>"
+	}
+	return fmt.Sprintf("%v", names)
 }

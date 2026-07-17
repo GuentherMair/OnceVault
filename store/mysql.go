@@ -1,3 +1,5 @@
+//go:build driver_mysql || driver_all
+
 package store
 
 import (
@@ -8,6 +10,10 @@ import (
 
 	mysqldrv "github.com/go-sql-driver/mysql" // registers driver "mysql"; also provides the error type
 )
+
+func init() {
+	registry["mysql"] = func(dsn string) (Store, error) { return NewMySQL(dsn) }
+}
 
 // MySQL stores secrets in a MySQL/MariaDB database via go-sql-driver/mysql.
 type MySQL struct {

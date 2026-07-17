@@ -1,3 +1,5 @@
+//go:build driver_postgres || driver_all
+
 package store
 
 import (
@@ -9,6 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers driver "pgx"
 )
+
+func init() {
+	registry["postgres"] = func(dsn string) (Store, error) { return NewPostgres(dsn) }
+}
 
 // Postgres stores secrets in a PostgreSQL database via pgx's database/sql driver.
 type Postgres struct {

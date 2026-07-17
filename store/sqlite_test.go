@@ -1,3 +1,5 @@
+//go:build driver_sqlite || driver_all
+
 package store
 
 // Canonical Store-behavior tests, run against the in-memory sqlite backend.

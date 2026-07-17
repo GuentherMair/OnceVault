@@ -1,3 +1,5 @@
+//go:build driver_redis || driver_all
+
 package store
 
 import (
@@ -8,6 +10,10 @@ import (
 
 	"github.com/redis/go-redis/v9"
 )
+
+func init() {
+	registry["redis"] = func(dsn string) (Store, error) { return NewRedis(dsn) }
+}
 
 const redisKeyPrefix = "oncevault:"
 

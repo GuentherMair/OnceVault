@@ -1,3 +1,5 @@
+//go:build driver_sqlite || driver_all
+
 package store
 
 import (
@@ -8,6 +10,10 @@ import (
 
 	sqlite3 "modernc.org/sqlite" // registers driver "sqlite"; also provides the error type
 )
+
+func init() {
+	registry["sqlite"] = func(dsn string) (Store, error) { return NewSQLite(dsn) }
+}
 
 // SQLite stores secrets in a single-file (or in-memory) SQLite database via the
 // CGO-free modernc.org/sqlite driver.

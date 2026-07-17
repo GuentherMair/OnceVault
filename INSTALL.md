@@ -9,11 +9,19 @@ service on Debian/Ubuntu, cron cleanup, and TLS reverse proxying.
 Requires Go >= 1.22. The frontend is embedded into the binary at build time — there is
 nothing else to deploy.
 
+The standard command builds **all four storage drivers**; see [§7 Build tags & binary
+size](#7-build-tags--binary-size) below for slimmer single-driver builds.
+
 ```sh
 git clone <your-clone-url> oncevault && cd oncevault
-go build -o oncevault .
+go build -trimpath -ldflags="-s -w" -tags driver_all -o oncevault .
 sudo install -m 0755 oncevault /usr/local/bin/oncevault
 ```
+
+`-trimpath` strips absolute build paths (reproducible builds, slightly smaller), and
+`-ldflags="-s -w"` removes the DWARF debug info and symbol table (~35% smaller, no
+impact in production). The `-tags driver_all` is required because no drivers are
+compiled in by default; see §7.
 
 ## 2. Configure
 
@@ -255,4 +263,66 @@ sudo a2enmod ssl proxy proxy_http remoteip
     ServerName vault.example.com
     Redirect permanent / https://vault.example.com/
 </VirtualHost>
+```
+
+## 7. Build tags & binary size
+
+Each storage backend lives in its own file with a build tag, so you can ship a binary
+that contains only the drivers you actually use. Tag one or more of:
+
+| Tag | What it includes |
+|---|---|
+| `driver_sqlite` | CGO-free SQLite via `modernc.org/sqlite` |
+| `driver_redis` | Redis via `go-redis` |
+| `driver_mysql` | MySQL/MariaDB via `go-sql-driver/mysql` |
+| `driver_postgres` | PostgreSQL via `jackc/pgx/v5/stdlib` |
+| `driver_all` | All four (equivalent to passing all four tags) |
+
+If you build **without any tag** the binary contains no drivers; at startup you get a
+clear error pointing at the missing tag:
+
+```
+error="unknown db driver \"sqlite\" (built: <none — rebuild with -tags driver_all or -tags driver_<name>>)"
+```
+
+To build only the backend you plan to deploy, e.g. sqlite:
+
+```sh
+go build -trimpath -ldflags="-s -w" -tags driver_sqlite -o oncevault .
+```
+
+Combine tags for multi-backend hosts: `-tags driver_sqlite,driver_redis`.
+
+Measured sizes on this machine (Go 1.26.5, darwin/arm64, `-trimpath -ldflags="-s -w"`):
+
+| `-tags …` | Binary size |
+|---|---|
+| _no tags_ | 6.0 MB |
+| `driver_mysql` | 6.6 MB |
+| `driver_redis` | 7.2 MB |
+| `driver_sqlite` | 9.9 MB |
+| `driver_postgres` | 10.0 MB |
+| `driver_sqlite,driver_mysql` | 10.2 MB |
+| `driver_mysql,driver_postgres` | 10.4 MB |
+| `driver_sqlite,driver_redis` | 11.0 MB |
+| `driver_sqlite,driver_postgres` | 13.6 MB |
+| `driver_sqlite,driver_mysql,driver_postgres` | 14.0 MB |
+| `driver_all` (default) | 15.1 MB |
+| _none of the above, no `-s -w`_ | 23.3 MB |
+
+`sqlite` is the largest single driver because `modernc.org/sqlite` is the full SQLite
+engine translated to Go. `postgres` is large for a single driver because pgx's stdlib
+mode pulls in the protocol stack. `mysql` is the lightest after redis.
+
+If you need to go even smaller, the remaining ~6 MB is the Go runtime + the FIPS
+140-3 crypto module that Go 1.24+ always links in. UPX will compress the resulting
+binary by another ~50% at the cost of a slightly slower startup and a small RSS
+overhead, but a few anti-malware tools flag UPX-packed binaries, so use it only where
+you control the deployment host.
+
+Tests under `store/` and `server/` exercise the sqlite backend and are gated by the
+same tag, so to run the full suite:
+
+```sh
+go test -tags driver_all ./...
 ```
