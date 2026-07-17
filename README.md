@@ -44,6 +44,13 @@ Single Go binary, one self-contained HTML page, your choice of sqlite, redis, My
 or PostgreSQL. See [INSTALL.md](INSTALL.md) for build, configuration, database setup,
 systemd, cron cleanup, and reverse-proxy examples.
 
+## Provenance
+
+OnceVault was built entirely with LLM tooling (Anthropic Claude and MiniMax models) —
+from a human-written specification, through a staged multi-agent build plan, to review
+and iteration. The full original request and step plans are preserved in
+[docs/](docs/INITIAL_REQUEST.md).
+
 ## License
 
 [MIT](LICENSE) — Copyright (c) 2026 Günther Mair.
