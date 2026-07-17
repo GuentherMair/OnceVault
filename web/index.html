@@ -260,7 +260,7 @@ dialog li{margin-bottom:4px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div id="outText" class="out-text"></div>
+    <pre id="outText" class="out-text"></pre>
   </div>
 </main>
 
@@ -352,6 +352,8 @@ dialog li{margin-bottom:4px}
   function showOutput(state,text){
     out.className='out out-'+state;   /* encrypt | decrypt | error */
     outText.textContent=text;
+    input.value='';                  /* reset input first */
+    form.hidden=true;                 /* then hide it */
     out.hidden=false;
   }
   function resetUrl(){ history.replaceState(null,'',location.pathname); }
@@ -359,7 +361,7 @@ dialog li{margin-bottom:4px}
     outText.textContent='';
     out.hidden=true;
     out.className='out';
-    input.value='';
+    form.hidden=false;                /* show input again */
     resetUrl();
     input.focus();
   });
@@ -429,7 +431,6 @@ dialog li{margin-bottom:4px}
         return res.json().catch(function(){ return {}; }).then(function(data){
           if(res.status===201&&data.guid){
             showOutput('encrypt',location.origin+'/?guid='+data.guid+'#'+bytesToB64Url(rawKey));
-            input.value='';
           }else{
             showOutput('error',data.error||('unexpected server response (HTTP '+res.status+')'));
           }
@@ -481,6 +482,7 @@ dialog li{margin-bottom:4px}
       .then(resetUrl); /* strip ?guid and #fragment from the address bar */
   }
   decryptOnLoad();
+  if(!form.hidden) input.focus();
 })();
 </script>
 </body>
