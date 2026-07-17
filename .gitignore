@@ -1,0 +1,37 @@
+# Build output
+/oncevault
+*.exe
+
+# Go test / coverage
+*.test
+*.out
+coverage.txt
+go.work
+go.work.sum
+
+# Local config (contains DB DSN with credentials — see INSTALL.md §2/§3).
+# Only the .example.* templates are tracked.
+config.yaml
+config.yml
+config.json
+
+# Local sqlite database files and WAL sidecars (default backend)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Logs
+*.log

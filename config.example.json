@@ -1,0 +1,16 @@
+{
+  "listen": "127.0.0.1:8420",
+  "db": {
+    "driver": "sqlite",
+    "dsn": "/var/lib/oncevault/oncevault.db"
+  },
+  "max_secret_bytes": 16384,
+  "trusted_proxies": [],
+  "rate_limit": {
+    "default": 60,
+    "rules": {
+      "10.0.0.0/8": "0",
+      "192.0.2.0/24": "-"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+# OnceVault example configuration (YAML).
+# Copy to e.g. /etc/oncevault/config.yaml and adapt. A JSON variant with the
+# same values ships as config.example.json; this file carries the documentation.
+# Start with: oncevault -config /etc/oncevault/config.yaml
+
+# Address the built-in HTTP server binds to. OnceVault speaks plain HTTP;
+# TLS terminates at the reverse proxy (see INSTALL.md). Keep it on localhost
+# unless you know exactly why you need otherwise.
+listen: "127.0.0.1:8420"
+
+db:
+  # One of: sqlite | redis | mysql | postgres
+  driver: "sqlite"
+  # DSN format depends on the driver:
+  #   sqlite:   /var/lib/oncevault/oncevault.db          (file path; dir must be writable)
+  #   redis:    redis://[:password@]host:6379/0
+  #   mysql:    user:password@tcp(host:3306)/oncevault
+  #   postgres: postgres://user:password@host:5432/oncevault
+  dsn: "/var/lib/oncevault/oncevault.db"
+
+# Maximum size of a single secret in bytes, measured on the DECODED ciphertext
+# (roughly the plaintext size; AES-GCM adds only a 16-byte tag). Requests above
+# the cap are rejected with 400. Choosing a value is a trade-off:
+#
+#   1024  (1 KiB)  strict     — enough for passwords, API keys, and short notes.
+#                               Smallest storage-abuse surface: an attacker
+#                               flooding the service can park very little data.
+#   16384 (16 KiB) balanced   — DEFAULT. Fits SSH private keys, certificates,
+#                               .env files, and multi-line configs while keeping
+#                               per-request storage abuse modest.
+#   65536 (64 KiB) permissive — fits large key bundles and small documents, but
+#                               raises the storage-abuse ceiling accordingly:
+#                               each anonymous POST may park ~85 KiB of base64
+#                               in your database until it expires. Combine with
+#                               tighter rate limits if you go this high.
+#
+# 0 or absent falls back to the 16384 default; the value must otherwise be >= 1.
+max_secret_bytes: 16384
+
+# CIDRs of reverse proxies allowed to set X-Forwarded-For. Only when the direct
+# peer address matches one of these entries is the forwarded client IP trusted
+# for rate limiting; otherwise the peer address itself is used. Bare IPs are
+# accepted and normalized to /32 (IPv4) or /128 (IPv6).
+# With the nginx/apache setups from INSTALL.md on the same host:
+#   trusted_proxies: ["127.0.0.1", "::1"]
+trusted_proxies: []
+
+rate_limit:
+  # POST /api/secrets requests per minute for addresses no rule matches.
+  # 0 is not allowed: it logs a startup WARNING and reverts to 6000/min.
+  default: 60
+  # Per-CIDR overrides; longest prefix wins. Values are strings:
+  #   "0" — unlimited POSTs
+  #   "-" — blocked entirely (ALL routes, enforced before routing)
+  #   "n" — n POSTs per minute (positive integer)
+  rules:
+    "10.0.0.0/8": "0"
+    "192.0.2.0/24": "-"

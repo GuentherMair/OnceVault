@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>OnceVault</title>
+<style>
+/* ---- theme tokens: light is the base, dark applies via prefers-color-scheme
+   (system default) or an explicit data-theme="dark" on <html> ---- */
+:root{
+  color-scheme:light dark;
+  --bg:#ffffff;
+  --fg:#202124;
+  --muted:#5f6368;
+  --border:#dfe1e5;
+  --pill-bg:#ffffff;
+  --pill-shadow:0 1px 6px rgba(32,33,36,.28);
+  --btn-bg:#f8f9fa;
+  --hover-bg:rgba(60,64,67,.08);
+  --focus:#1a73e8;
+  --dialog-bg:#ffffff;
+  --backdrop:rgba(32,33,36,.5);
+  /* tri-state output: yellow (link) / green (secret) / red (error), darker font tones */
+  --y-bg:#fef7e0; --y-fg:#7a5901;
+  --g-bg:#e6f4ea; --g-fg:#18632f;
+  --r-bg:#fce8e6; --r-fg:#a50e0e;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#202124;
+    --fg:#e8eaed;
+    --muted:#9aa0a6;
+    --border:#5f6368;
+    --pill-bg:#303134;
+    --pill-shadow:0 1px 6px rgba(0,0,0,.5);
+    --btn-bg:#303134;
+    --hover-bg:rgba(232,234,237,.1);
+    --focus:#8ab4f8;
+    --dialog-bg:#2d2e31;
+    --backdrop:rgba(0,0,0,.6);
+    --y-bg:#41361a; --y-fg:#fdd663;
+    --g-bg:#1e3427; --g-fg:#81c995;
+    --r-bg:#3c1f1d; --r-fg:#f28b82;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#202124;
+  --fg:#e8eaed;
+  --muted:#9aa0a6;
+  --border:#5f6368;
+  --pill-bg:#303134;
+  --pill-shadow:0 1px 6px rgba(0,0,0,.5);
+  --btn-bg:#303134;
+  --hover-bg:rgba(232,234,237,.1);
+  --focus:#8ab4f8;
+  --dialog-bg:#2d2e31;
+  --backdrop:rgba(0,0,0,.6);
+  --y-bg:#41361a; --y-fg:#fdd663;
+  --g-bg:#1e3427; --g-fg:#81c995;
+  --r-bg:#3c1f1d; --r-fg:#f28b82;
+}
+:root[data-theme="light"]{color-scheme:light}
+
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{
+  font-family:arial,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);
+  color:var(--fg);
+  display:flex;
+  flex-direction:column;
+  min-height:100%;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+}
+
+/* ---- top-right corner: theme cycler + help ---- */
+.topbar{display:flex;justify-content:flex-end;gap:6px;padding:14px 18px}
+.iconbtn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px;border-radius:50%;color:var(--muted);
+  transition:background-color .12s;
+}
+.iconbtn:hover{background:var(--hover-bg)}
+.iconbtn svg{width:22px;height:22px;display:block}
+/* theme button shows the icon of the CURRENT mode */
+.t-ico{display:none}
+html[data-theme="system"] .i-system{display:block}
+html[data-theme="dark"]   .i-dark{display:block}
+html[data-theme="light"]  .i-light{display:block}
+
+/* ---- centered search-page layout ---- */
+main{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 16px 14vh;
+}
+.wordmark{
+  font-size:clamp(52px,9vw,84px);
+  font-weight:500;
+  letter-spacing:-.03em;
+  margin-bottom:30px;
+  user-select:none;
+}
+
+/* ---- pill input row ---- */
+form{width:min(92%,700px);display:flex;flex-direction:column;align-items:center}
+.pill{
+  display:flex;align-items:center;gap:8px;
+  width:100%;max-width:700px;height:48px;
+  padding:0 90px;
+  border:1px solid var(--border);border-radius:9999px;
+  background:var(--pill-bg);
+  transition:box-shadow .12s,border-color .12s;
+}
+.pill:hover,.pill:focus-within{box-shadow:var(--pill-shadow);border-color:transparent}
+.pill input{
+  flex:1;min-width:0;height:100%;
+  border:0;outline:0;background:transparent;color:inherit;
+  font-size:16px;
+}
+.pill .iconbtn{padding:6px}
+.pill .iconbtn svg{width:20px;height:20px}
+.pill select{
+  border:1px solid var(--border);border-radius:9999px;
+  background:var(--btn-bg);color:inherit;
+  font-size:13px;padding:4px 6px;
+  cursor:pointer;
+}
+@media (max-width:640px){
+  .pill{padding:0 20px}
+}
+
+/* ---- encrypt button, Google-Search style ---- */
+.actions{margin-top:28px}
+.encrypt-btn{
+  background:var(--btn-bg);
+  border:1px solid transparent;border-radius:4px;
+  font-size:14px;padding:10px 18px;color:var(--fg);
+  transition:box-shadow .12s,border-color .12s;
+}
+.encrypt-btn:hover{border-color:var(--border);box-shadow:0 1px 1px rgba(0,0,0,.1)}
+.encrypt-btn small{color:var(--muted);font-size:12px}
+
+/* ---- tri-state output panel ---- */
+.out{
+  position:relative;
+  width:min(92%,700px);max-width:700px;
+  margin-top:30px;
+  border-radius:16px;
+  padding:16px 84px 16px 22px;
+  min-height:calc(2 * 1.5 * 13px + 32px); /* two text rows + padding */
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;line-height:1.5;
+}
+.out-text{white-space:pre-wrap;word-break:break-all}
+.out-encrypt{background:var(--y-bg);color:var(--y-fg)}
+.out-decrypt{background:var(--g-bg);color:var(--g-fg)}
+.out-error  {background:var(--r-bg);color:var(--r-fg)}
+.out-tools{position:absolute;top:8px;right:10px;display:flex;gap:2px}
+.out-tools .iconbtn{color:inherit;opacity:.75;padding:6px}
+.out-tools .iconbtn:hover{opacity:1}
+.out-tools svg{width:17px;height:17px}
+@media (max-width:640px){
+  .out{padding-right:72px}
+}
+
+/* ---- help dialog ---- */
+dialog{
+  border:0;border-radius:12px;
+  background:var(--dialog-bg);color:var(--fg);
+  width:calc(100% - 32px);max-width:560px;
+  padding:26px 30px;
+  margin:auto;
+}
+dialog::backdrop{background:var(--backdrop)}
+dialog h2{font-size:20px;font-weight:500;margin-bottom:12px;padding-right:36px}
+dialog p{font-size:14px;line-height:1.55;margin-bottom:12px}
+dialog ul{font-size:14px;line-height:1.55;margin:0 0 12px 20px}
+dialog li{margin-bottom:4px}
+.dlg-close{position:absolute;top:14px;right:14px}
+.chip{
+  display:inline-block;width:.85em;height:.85em;border-radius:3px;
+  margin-right:6px;vertical-align:-.06em;
+}
+.chip-y{background:var(--y-bg);border:1px solid var(--y-fg)}
+.chip-g{background:var(--g-bg);border:1px solid var(--g-fg)}
+.chip-r{background:var(--r-bg);border:1px solid var(--r-fg)}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <button id="themeBtn" class="iconbtn" type="button" title="Theme: system → dark → light" aria-label="Cycle color theme">
+    <svg class="t-ico i-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <svg class="t-ico i-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="t-ico i-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+  <button id="helpBtn" class="iconbtn" type="button" title="About OnceVault" aria-label="Help">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  </button>
+</nav>
+
+<main>
+  <h1 class="wordmark">OnceVault</h1>
+
+  <form id="form" autocomplete="off">
+    <div class="pill">
+      <input id="secret" type="password" placeholder="Secret" aria-label="Secret"
+             autocomplete="new-password" spellcheck="false"
+             data-lpignore="true" data-1p-ignore data-bwignore>
+      <button id="eyeBtn" class="iconbtn" type="button" title="Show secret" aria-label="Toggle secret visibility">
+        <svg id="iEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg id="iEyeOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </button>
+      <select id="duration" aria-label="Expires after">
+        <option value="1">1h</option>
+        <option value="4">4h</option>
+        <option value="8">8h</option>
+        <option value="24" selected>1d</option>
+        <option value="48">2d</option>
+        <option value="120">5d</option>
+        <option value="168">7d</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="encrypt-btn" type="submit">Encrypt <small>[AES-256-GCM]</small></button>
+    </div>
+  </form>
+
+  <div id="out" class="out" hidden>
+    <div class="out-tools">
+      <button id="copyBtn" class="iconbtn" type="button" title="Copy" aria-label="Copy to clipboard">
+        <svg id="iCopy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg id="iCheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button id="closeBtn" class="iconbtn" type="button" title="Close" aria-label="Close output">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="outText" class="out-text"></div>
+  </div>
+</main>
+
+<dialog id="helpDlg" aria-labelledby="helpTitle">
+  <button id="dlgClose" class="iconbtn dlg-close" type="button" title="Close" aria-label="Close help">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <h2 id="helpTitle">OnceVault — share a secret once, then it burns.</h2>
+  <p>Your secret is encrypted <strong>in your browser</strong> with AES-256-GCM before
+  anything leaves your machine. The server only ever stores the ciphertext under a random
+  ID with an expiry you pick (1 hour to 7 days). The decryption key travels
+  <strong>only</strong> in the <code>#fragment</code> of the share link, which browsers
+  never send to any server — OnceVault couldn't read your secret even if it wanted to.
+  The first person to open the link gets the secret; the ciphertext is deleted in the
+  same moment. Expired secrets are deleted unread.</p>
+  <p><strong>Durations:</strong> 1 hour, 4 hours, 8 hours, 1 day, 2 days, 5 days or 7 days.
+  Whatever is not retrieved in time is deleted unread.</p>
+  <p><strong>Read-once:</strong> the first open of a share link atomically fetches and
+  deletes the ciphertext. Anyone opening the same link afterwards — including you — sees
+  an error, never the secret.</p>
+  <ul>
+    <li><span class="chip chip-y"></span>Yellow — your share link, ready to copy and send.</li>
+    <li><span class="chip chip-g"></span>Green — a secret decrypted for you, shown exactly once.</li>
+    <li><span class="chip chip-r"></span>Red — an error: burned, expired, or an invalid key.</li>
+  </ul>
+  <p><strong>HTTPS required:</strong> the Web Crypto API only works in a secure context,
+  so OnceVault must be served over HTTPS (or localhost for testing).</p>
+</dialog>
+
+<script>
+'use strict';
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var form=$('form'), input=$('secret'), durationSel=$('duration'),
+      eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeOff=$('iEyeOff'),
+      out=$('out'), outText=$('outText'),
+      copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
+      themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose');
+
+  var UUID_RE=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  /* 43 unpadded base64/base64url chars (a 32-byte key), optionally a 44th which may be '=' */
+  var KEY_RE=/^[A-Za-z0-9_+/-]{43}[A-Za-z0-9_+/=-]?$/;
+
+  /* ---- theme: system → dark → light, persisted under the ONLY storage key used ---- */
+  var THEMES=['system','dark','light'], theme='system';
+  try{
+    var t=localStorage.getItem('oncevault-theme');
+    if(THEMES.indexOf(t)>=0) theme=t;
+  }catch(e){}
+  document.documentElement.dataset.theme=theme;
+  themeBtn.addEventListener('click',function(){
+    theme=THEMES[(THEMES.indexOf(theme)+1)%THEMES.length];
+    document.documentElement.dataset.theme=theme;
+    try{ localStorage.setItem('oncevault-theme',theme); }catch(e){}
+  });
+
+  /* ---- autofill prevention: randomized field name, native submit prevented below ---- */
+  var rnd=new Uint8Array(8);
+  (window.crypto||{getRandomValues:function(a){for(var i=0;i<a.length;i++)a[i]=Math.random()*256|0;return a;}}).getRandomValues(rnd);
+  var name='s';
+  for(var i=0;i<rnd.length;i++) name+=(rnd[i]|0).toString(16);
+  input.name=name;
+
+  /* ---- base64 helpers ---- */
+  function bytesToB64(buf){ /* standard base64 WITH padding — used in API bodies */
+    var b=new Uint8Array(buf), s='';
+    for(var i=0;i<b.length;i+=0x8000)
+      s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));
+    return btoa(s);
+  }
+  function bytesToB64Url(buf){ /* base64url, unpadded — used ONLY in the local #fragment */
+    return bytesToB64(buf).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function b64ToBytes(s){ /* accepts base64url AND standard base64 (defensive) */
+    s=s.replace(/-/g,'+').replace(/_/g,'/');
+    while(s.length%4) s+='=';
+    var bin=atob(s), out=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i);
+    return out;
+  }
+
+  /* ---- output panel ---- */
+  function showOutput(state,text){
+    out.className='out out-'+state;   /* encrypt | decrypt | error */
+    outText.textContent=text;
+    out.hidden=false;
+  }
+  function resetUrl(){ history.replaceState(null,'',location.pathname); }
+  closeBtn.addEventListener('click',function(){
+    outText.textContent='';
+    out.hidden=true;
+    out.className='out';
+    input.value='';
+    resetUrl();
+  });
+  copyBtn.addEventListener('click',function(){
+    navigator.clipboard.writeText(outText.textContent).then(function(){
+      iCopy.hidden=true; iCheck.hidden=false;
+      setTimeout(function(){ iCopy.hidden=false; iCheck.hidden=true; },1200);
+    }).catch(function(){});
+  });
+
+  /* ---- eye toggle ---- */
+  eyeBtn.addEventListener('click',function(){
+    var reveal=input.type==='password';
+    input.type=reveal?'text':'password';
+    iEye.hidden=reveal; iEyeOff.hidden=!reveal;
+    eyeBtn.title=reveal?'Hide secret':'Show secret';
+  });
+
+  /* ---- help dialog ---- */
+  helpBtn.addEventListener('click',function(){ helpDlg.showModal(); });
+  dlgClose.addEventListener('click',function(){ helpDlg.close(); });
+
+  /* ---- encrypt flow ----
+     SECURITY INVARIANT: the plaintext and the key NEVER appear in any request.
+     Only ciphertext + IV + duration are POSTed; the key goes into the local
+     #fragment of the displayed link and nowhere else. */
+  var busy=false;
+  form.addEventListener('submit',function(e){
+    e.preventDefault();               /* native form submit prevented */
+    if(input.value) encrypt();        /* ENTER / click no-op on empty input */
+  });
+  function encrypt(){
+    if(busy) return;
+    if(!window.crypto||!crypto.subtle){
+      showOutput('error','encryption unavailable — OnceVault requires HTTPS (secure context)');
+      return;
+    }
+    busy=true;
+    var rawKey;
+    crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt'])
+      .then(function(key){
+        var iv=crypto.getRandomValues(new Uint8Array(12));
+        return Promise.all([
+          crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(input.value)),
+          crypto.subtle.exportKey('raw',key),
+          iv
+        ]);
+      })
+      .then(function(r){
+        var ct=r[0]; rawKey=r[1]; var iv=r[2];
+        return fetch('/api/secrets',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            secret:bytesToB64(ct),
+            iv:bytesToB64(iv),
+            duration:Number(durationSel.value)
+          })
+        });
+      })
+      .then(function(res){
+        return res.json().catch(function(){ return {}; }).then(function(data){
+          if(res.status===201&&data.guid){
+            showOutput('encrypt',location.origin+'/?guid='+data.guid+'#'+bytesToB64Url(rawKey));
+            input.value='';
+          }else{
+            showOutput('error',data.error||('unexpected server response (HTTP '+res.status+')'));
+          }
+        });
+      })
+      .catch(function(){
+        showOutput('error','network error — could not reach the server');
+      })
+      .then(function(){ busy=false; });
+  }
+
+  /* ---- decrypt-on-load ----
+     SECURITY INVARIANT: the GET uses the GUID only. The fragment (key) is read
+     from location.hash, used exclusively by crypto.subtle.importKey below, and
+     is never concatenated into any URL, body or header. */
+  function decryptOnLoad(){
+    var guid=new URLSearchParams(location.search).get('guid');
+    var frag=location.hash.replace(/^#/,'');
+    if(!guid||!UUID_RE.test(guid)) return;
+    if(!KEY_RE.test(frag)) return;
+    if(!window.crypto||!crypto.subtle){
+      showOutput('error','decryption unavailable — OnceVault requires HTTPS (secure context)');
+      resetUrl();
+      return;
+    }
+    fetch('/api/secrets/'+guid)
+      .then(function(res){
+        if(res.ok){
+          return res.json().then(function(body){
+            return crypto.subtle.importKey('raw',b64ToBytes(frag),{name:'AES-GCM'},false,['decrypt'])
+              .then(function(key){
+                return crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(body.iv)},key,b64ToBytes(body.secret));
+              })
+              .then(function(pt){
+                showOutput('decrypt',new TextDecoder().decode(pt));
+              })
+              .catch(function(){
+                showOutput('error','decryption failed — wrong or corrupted key');
+              });
+          });
+        }
+        return res.json().catch(function(){ return {}; }).then(function(data){
+          showOutput('error',data.error||('unexpected server response (HTTP '+res.status+')'));
+        });
+      })
+      .catch(function(){
+        showOutput('error','network error — could not reach the server');
+      })
+      .then(resetUrl); /* strip ?guid and #fragment from the address bar */
+  }
+  decryptOnLoad();
+})();
+</script>
+</body>
+</html>
