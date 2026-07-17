@@ -91,7 +91,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .iconbtn:hover{background:var(--hover-bg)}
 .iconbtn svg{width:22px;height:22px;display:block}
 /* theme button shows the icon of the CURRENT mode */
-.t-ico{display:none}
+.iconbtn .t-ico{display:none}
 html[data-theme="system"] .i-system{display:block}
 html[data-theme="dark"]   .i-dark{display:block}
 html[data-theme="light"]  .i-light{display:block}
@@ -110,11 +110,15 @@ main{
 }
 
 /* ---- pill input row ---- */
-form{width:min(92%,700px);display:flex;flex-direction:column;align-items:center}
+form{
+  width:min(92%,700px);
+  margin-inline:90px; /* min distance from input to window border */
+  display:flex;flex-direction:column;align-items:center
+}
 .pill{
   display:flex;align-items:center;gap:8px;
   width:100%;max-width:700px;height:48px;
-  padding:0 90px;
+  padding:0 16px; /* horizontal breathing room */
   border:1px solid var(--border);border-radius:9999px;
   background:var(--pill-bg);
   transition:box-shadow .12s,border-color .12s;
@@ -134,7 +138,9 @@ form{width:min(92%,700px);display:flex;flex-direction:column;align-items:center}
   cursor:pointer;
 }
 @media (max-width:640px){
-  .pill{padding:0 20px}
+  /* On narrow screens the 92% width already gives ample space; the explicit
+     90px margin would force horizontal overflow. */
+  form{margin-inline:0}
 }
 
 /* ---- encrypt button, Google-Search style ---- */
@@ -146,7 +152,6 @@ form{width:min(92%,700px);display:flex;flex-direction:column;align-items:center}
   transition:box-shadow .12s,border-color .12s;
 }
 .encrypt-btn:hover{border-color:var(--border);box-shadow:0 1px 1px rgba(0,0,0,.1)}
-.encrypt-btn small{color:var(--muted);font-size:12px}
 
 /* ---- tri-state output panel ---- */
 .out{
@@ -232,7 +237,7 @@ dialog li{margin-bottom:4px}
       </select>
     </div>
     <div class="actions">
-      <button class="encrypt-btn" type="submit">Encrypt <small>[AES-256-GCM]</small></button>
+      <button class="encrypt-btn" type="submit">Encrypt</button>
     </div>
   </form>
 
@@ -346,6 +351,7 @@ dialog li{margin-bottom:4px}
     out.className='out';
     input.value='';
     resetUrl();
+    input.focus();
   });
   copyBtn.addEventListener('click',function(){
     navigator.clipboard.writeText(outText.textContent).then(function(){

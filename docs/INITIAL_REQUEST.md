@@ -9,7 +9,7 @@ The frontends specs:
 
 - the app name, centered like the "Google" title on google.com
 - very plain, no piece of HTML/JavaScript that is not absolutely necessary
-- a horizontaly and vertically centered password input field labeled "Secret" with fully rounded edges (like the search input field on google.com), max. 700px wide with 90px padding and shrinking on narrower screens
+- a horizontaly and vertically centered password input field labeled "Secret" with fully rounded edges (like the search input field on google.com), max. 700px wide with 90px margin from the left/right window border (the input field should shrink on narrower screens)
 - an dropdown button on the right, inside the input field (also rounded to fit the input field) allowing to select from [1h, 4h, 8h, 1d, 2d, 5d, 7d] and defaulting to 1d (this is the duration, no label needed)
 - an "Encrypt [AES-256-GCM]" button below the input field (similar to the "Google search" button on google.com)
 - an output field below (hidden by default) should be as wide as the input field + button and with minimal height for 2 text output rows (automatically making space by extending veritically on longer output)

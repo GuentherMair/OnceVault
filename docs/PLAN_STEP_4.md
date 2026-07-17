@@ -9,7 +9,7 @@ minimalism.
 ## Layout (Google-style)
 
 - Centered "OnceVault" wordmark above the input (system font stack, large, like the Google logo position).
-- Pill input row, horizontally+vertically centered: `<input type="password">` labeled/placeholder "Secret"; fully rounded (border-radius 9999px); `max-width: 700px`; 90px horizontal padding; `width: 90%`-ish so it shrinks on narrow screens.
+- Pill input row, horizontally+vertically centered: `<input type="password">` labeled/placeholder "Secret"; fully rounded (border-radius 9999px); `max-width: 700px`; min. 90px horizontal margin to window borders; it shrinks on narrow screens.
 - Inside the pill, right side: eye toggle button (SVG), then a rounded native `<select>` duration dropdown fitted into the pill: options 1h,4h,8h,1d,2d,5d,7d → values 1,4,8,24,48,120,168, default 1d (24). No label.
 - Below: button `Encrypt [AES-256-GCM]` styled like the "Google Search" button.
 - Output panel below (hidden by default): width matches the input row; `min-height` = 2 text rows; grows vertically with content (pre-wrap, break-all for links); top-right inside: copy icon + close icon.
