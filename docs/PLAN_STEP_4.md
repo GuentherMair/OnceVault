@@ -33,11 +33,15 @@ minimalism.
 
 ## Constraints
 Vanilla JS (one inline `<script>`), one inline `<style>`; no framework, no build step, no
-external URL anywhere in the file. Works standalone when opened via the Go server later
-(step 6 embeds it; a static file server suffices for manual testing now).
+external URL that the page LOADS anything from (no CDN/fonts/images/fetch targets).
+Sole allowed exception (amendment 2026-07-17): the help-dialog license line links
+`https://github.com/GuentherMair/OnceVault` (`target="_blank" rel="noopener noreferrer"`)
+— a user-click navigation, never fetched by the page itself. Works standalone when
+opened via the Go server later (step 6 embeds it; a static file server suffices for
+manual testing now).
 
 ## Re-verify before finishing
 Invariants in [PLAN.md](PLAN.md) — especially: plaintext/key never in any request;
-`grep -ci "http" web/index.html` shows no external URLs; file passes a smoke test in a
-local browser (encryption path can be tested against a mock or by checking the request
-payload shape in devtools).
+`grep -ci "http" web/index.html` finds no external URLs besides the GitHub help-dialog
+link above; file passes a smoke test in a local browser (encryption path can be tested
+against a mock or by checking the request payload shape in devtools).
