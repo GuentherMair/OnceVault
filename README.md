@@ -1,4 +1,12 @@
-# OnceVault — share a secret once, then it burns.
+# OnceVault — share a secret once, then burn it.
+
+OnceVault lets you safely share a secret with exactly one person — it's encrypted
+in your browser, only one recipient can open it, and the link self-destructs the
+moment they read it.
+
+> And if someone else got the link you will know: the message will already be gone!
+
+## Under the hood
 
 Your secret is encrypted **in your browser** with AES-256-GCM before anything leaves
 your machine. The server only ever stores the ciphertext under a random ID with an

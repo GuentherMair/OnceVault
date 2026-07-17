@@ -181,7 +181,9 @@ dialog{
 }
 dialog::backdrop{background:var(--backdrop)}
 dialog h2{font-size:20px;font-weight:500;margin-bottom:12px;padding-right:36px}
+dialog h3{font-size:12px;font-weight:600;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 dialog p{font-size:14px;line-height:1.55;margin-bottom:12px}
+dialog blockquote{margin:0 0 12px;padding:8px 12px;border-left:3px solid var(--y-fg);border-radius:0 6px 6px 0;font-size:14px;line-height:1.55}
 dialog ul{font-size:14px;line-height:1.55;margin:0 0 12px 20px}
 dialog li{margin-bottom:4px}
 .dlg-close{position:absolute;top:14px;right:14px}
@@ -253,6 +255,11 @@ dialog li{margin-bottom:4px}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
   <h2 id="helpTitle">OnceVault — share a secret once, then it burns.</h2>
+  <p>OnceVault lets you safely share a secret with exactly one person — it's encrypted
+  in your browser, only one recipient can open it, and the link self-destructs the
+  moment they read it.</p>
+  <blockquote>And if someone else got the link you will know: the message will already be gone!</blockquote>
+  <h3>Under the hood</h3>
   <p>Your secret is encrypted <strong>in your browser</strong> with AES-256-GCM before
   anything leaves your machine. The server only ever stores the ciphertext under a random
   ID with an expiry you pick (1 hour to 7 days). The decryption key travels
