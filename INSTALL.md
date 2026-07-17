@@ -30,9 +30,18 @@ extension: `.json` is parsed as JSON, `.yaml`/`.yml` as YAML. Both carry the sam
 [config.example.yaml](config.example.yaml) is the annotated reference,
 [config.example.json](config.example.json) mirrors its values.
 
+Create the dedicated system user first (the service in section 4 and the cron job in
+section 5 run as it), then install the config with restrictive permissions — the file
+may contain a DB password, so nobody besides root and the service user may read it:
+
 ```sh
+sudo adduser --system --group --home /var/lib/oncevault --shell /usr/sbin/nologin oncevault
+
 sudo mkdir -p /etc/oncevault
 sudo cp config.example.yaml /etc/oncevault/config.yaml
+sudo chown -R oncevault:oncevault /etc/oncevault
+sudo chmod 750 /etc/oncevault
+sudo chmod 640 /etc/oncevault/config.yaml
 ```
 
 Key by key:
@@ -59,7 +68,7 @@ directory itself must be writable — sqlite creates WAL/journal side files):
 
 ```sh
 sudo mkdir -p /var/lib/oncevault
-sudo chown oncevault:oncevault /var/lib/oncevault   # user created in section 4
+sudo chown oncevault:oncevault /var/lib/oncevault   # user created in section 2
 sudo chmod 0750 /var/lib/oncevault
 ```
 
@@ -144,13 +153,8 @@ db:
 
 ## 4. Run as a service (Debian/Ubuntu, systemd)
 
-Create a dedicated system user and install the unit:
-
-```sh
-sudo adduser --system --group --home /var/lib/oncevault --shell /usr/sbin/nologin oncevault
-```
-
-`/etc/systemd/system/oncevault.service`:
+The service runs as the `oncevault` system user created in section 2. Install the unit
+as `/etc/systemd/system/oncevault.service`:
 
 ```ini
 [Unit]
