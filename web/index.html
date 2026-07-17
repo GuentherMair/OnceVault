@@ -92,6 +92,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 }
 .iconbtn:hover{background:var(--hover-bg)}
 .iconbtn svg{width:22px;height:22px;display:block}
+/* language picker: an invisible native <select> stretched over the globe icon,
+   so one tap opens the browser's own accessible option list */
+.langbtn{position:relative}
+.langbtn select{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;cursor:pointer}
+.langbtn:focus-within{outline:2px solid var(--focus);outline-offset:2px;border-radius:50%}
 /* eye toggle: same eye shape; .revealed on the button adds a strike-through */
 .iconbtn #iEyeSlash{display:none}
 .iconbtn.revealed #iEyeSlash{display:inline}
@@ -241,6 +246,36 @@ dialog li{margin-bottom:4px}
 <body>
 
 <nav class="topbar">
+  <div id="langBtn" class="iconbtn langbtn" title="Language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <select id="langSel" aria-label="Language">
+      <option value="en">English</option>
+      <option value="bg">Български</option>
+      <option value="cs">Čeština</option>
+      <option value="da">Dansk</option>
+      <option value="de">Deutsch</option>
+      <option value="el">Ελληνικά</option>
+      <option value="es">Español</option>
+      <option value="et">Eesti</option>
+      <option value="fi">Suomi</option>
+      <option value="fr">Français</option>
+      <option value="ga">Gaeilge</option>
+      <option value="hr">Hrvatski</option>
+      <option value="hu">Magyar</option>
+      <option value="it">Italiano</option>
+      <option value="lt">Lietuvių</option>
+      <option value="lv">Latviešu</option>
+      <option value="mt">Malti</option>
+      <option value="nl">Nederlands</option>
+      <option value="pl">Polski</option>
+      <option value="pt">Português</option>
+      <option value="ro">Română</option>
+      <option value="sk">Slovenčina</option>
+      <option value="sl">Slovenščina</option>
+      <option value="sv">Svenska</option>
+      <option value="zh">中文</option>
+    </select>
+  </div>
   <button id="themeBtn" class="iconbtn" type="button" title="Theme: system → dark → light" aria-label="Cycle color theme">
     <svg class="t-ico i-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     <svg class="t-ico i-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -277,7 +312,7 @@ dialog li{margin-bottom:4px}
       </select>
     </div>
     <div class="actions">
-      <button class="encrypt-btn" type="submit">Encrypt</button>
+      <button id="encBtn" class="encrypt-btn" type="submit">Encrypt</button>
     </div>
   </form>
 
@@ -299,34 +334,22 @@ dialog li{margin-bottom:4px}
   <button id="dlgClose" class="iconbtn dlg-close" type="button" title="Close" aria-label="Close help">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
-  <h2 id="helpTitle">OnceVault — share a secret once, then it burns.</h2>
-  <p>OnceVault lets you safely share a secret with exactly one recipient — it's encrypted
-  in your browser, only one recipient can open it, and the link self-destructs the
-  moment they read it.</p>
-  <blockquote>And if someone else got the link you will know: the message will already be gone!</blockquote>
-  <h3>Under the hood</h3>
-  <p>Your secret is encrypted <strong>in your browser</strong> with AES-256-GCM before
-  anything leaves your machine. The server only ever stores the ciphertext under a random
-  ID with an expiry you pick (1 hour to 7 days). The decryption key travels
-  <strong>only</strong> in the <code>#fragment</code> of the share link, which browsers
-  never send to any server — OnceVault couldn't read your secret even if it wanted to.
-  The first recipient to open the link gets the secret; the ciphertext is deleted in the
-  same moment. Expired secrets are deleted unread.</p>
-  <p><strong>Durations:</strong> 1 hour, 4 hours, 8 hours, 1 day, 2 days, 5 days or 7 days.
-  Whatever is not retrieved in time is deleted unread.</p>
-  <p><strong>Read-once:</strong> the first open of a share link atomically fetches and
-  deletes the ciphertext. Anyone opening the same link afterwards — including you — sees
-  an error, never the secret.</p>
+  <!-- All dialog copy is filled from the I18N table at load; data-i18n sets
+       textContent, data-i18n-html sets innerHTML (own static strings only). -->
+  <h2 id="helpTitle" data-i18n="hTitle">OnceVault — share a secret once, then it burns.</h2>
+  <p data-i18n="hIntro"></p>
+  <blockquote data-i18n="hQuote"></blockquote>
+  <h3 data-i18n="hHow"></h3>
+  <p data-i18n-html="hCrypto"></p>
+  <p data-i18n-html="hDur"></p>
+  <p data-i18n-html="hOnce"></p>
   <ul>
-    <li><span class="chip chip-y"></span>Yellow — your share link, ready to copy and send.</li>
-    <li><span class="chip chip-g"></span>Green — a secret decrypted for you, shown exactly once.</li>
-    <li><span class="chip chip-r"></span>Red — an error: burned, expired, or an invalid key.</li>
+    <li><span class="chip chip-y"></span><span data-i18n="legendY"></span></li>
+    <li><span class="chip chip-g"></span><span data-i18n="legendG"></span></li>
+    <li><span class="chip chip-r"></span><span data-i18n="legendR"></span></li>
   </ul>
-  <p><strong>HTTPS required:</strong> the Web Crypto API only works in a secure context,
-  so OnceVault must be served over HTTPS (or localhost for testing).</p>
-  <p class="dlg-license"><a href="https://github.com/GuentherMair/OnceVault" target="_blank" rel="noopener noreferrer">OnceVault is free software</a>, released under the MIT License.
-  Copyright &copy; 2026 G&uuml;nther Mair.
-  Built entirely with LLM tooling (Anthropic Claude and MiniMax models).</p>
+  <p data-i18n-html="hHttps"></p>
+  <p class="dlg-license"><a href="https://github.com/GuentherMair/OnceVault" target="_blank" rel="noopener noreferrer"><span data-i18n="hFree">OnceVault is free software</span></a><span data-i18n-html="hLicRest"></span></p>
 </dialog>
 
 <script>
@@ -335,9 +358,10 @@ dialog li{margin-bottom:4px}
   var $ = function(id){ return document.getElementById(id); };
   var form=$('form'), input=$('secret'), mask=$('mask'), durationSel=$('duration'),
       eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeSlash=$('iEyeSlash'),
-      out=$('out'), outText=$('outText'),
+      out=$('out'), outText=$('outText'), encBtn=$('encBtn'),
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
-      themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose');
+      themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose'),
+      langBtn=$('langBtn'), langSel=$('langSel');
 
   var UUID_RE=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   /* 43 unpadded base64/base64url chars (a 32-byte key), optionally a 44th which may be '=' */
@@ -382,6 +406,803 @@ dialog li{margin-bottom:4px}
     return out;
   }
 
+  /* ---- i18n: per-language string storages (UTF-8). English is the default
+     and the fallback for any missing key. Keys hCrypto/hDur/hOnce/hHttps/
+     hLicRest may carry <strong>/<code> markup (own static strings only). ---- */
+  var I18N={
+  en:{name:"English",secret:"Secret",encrypt:"Encrypt",lang:"Language",
+    theme:"Theme: system → dark → light",help:"About OnceVault",
+    eyeShow:"Show secret",eyeHide:"Hide secret",durAria:"Expires after",
+    copy:"Copy",close:"Close",
+    dur:["1h","4h","8h","1d","2d","5d","7d"],
+    errNoCryptoEnc:"encryption unavailable — OnceVault requires HTTPS (secure context)",
+    errNoCryptoDec:"decryption unavailable — OnceVault requires HTTPS (secure context)",
+    errNetwork:"network error — could not reach the server",
+    errDecrypt:"decryption failed — wrong or corrupted key",
+    errHttp:"unexpected server response (HTTP {0})",
+    srvBurned:"secret expired or was already burned",
+    srvExpired:"secret expired before it was retrieved",
+    srvRate:"rate limit exceeded, try again later",
+    srvBlocked:"access blocked",
+    srvBackend:"unexpected backend failure",
+    srvTooLarge:"secret exceeds maximum allowed size",
+    hTitle:"OnceVault — share a secret once, then it burns.",
+    hIntro:"OnceVault lets you safely share a secret with exactly one recipient — it's encrypted in your browser, only one recipient can open it, and the link self-destructs the moment they read it.",
+    hQuote:"And if someone else got the link you will know: the message will already be gone!",
+    hHow:"Under the hood",
+    hCrypto:"Your secret is encrypted <strong>in your browser</strong> with AES-256-GCM before anything leaves your machine. The server only ever stores the ciphertext under a random ID with an expiry you pick (1 hour to 7 days). The decryption key travels <strong>only</strong> in the <code>#fragment</code> of the share link, which browsers never send to any server — OnceVault couldn't read your secret even if it wanted to. The first recipient to open the link gets the secret; the ciphertext is deleted in the same moment. Expired secrets are deleted unread.",
+    hDur:"<strong>Durations:</strong> 1 hour, 4 hours, 8 hours, 1 day, 2 days, 5 days or 7 days. Whatever is not retrieved in time is deleted unread.",
+    hOnce:"<strong>Read-once:</strong> the first open of a share link atomically fetches and deletes the ciphertext. Anyone opening the same link afterwards — including you — sees an error, never the secret.",
+    legendY:"Yellow — your share link, ready to copy and send.",
+    legendG:"Green — a secret decrypted for you, shown exactly once.",
+    legendR:"Red — an error: burned, expired, or an invalid key.",
+    hHttps:"<strong>HTTPS required:</strong> the Web Crypto API only works in a secure context, so OnceVault must be served over HTTPS (or localhost for testing).",
+    hFree:"OnceVault is free software",
+    hLicRest:", released under the MIT License. Copyright © 2026 Günther Mair. Built entirely with LLM tooling (Anthropic Claude and MiniMax models)."},
+  bg:{name:"Български",secret:"Тайна",encrypt:"Шифровай",lang:"Език",
+    theme:"Тема: системна → тъмна → светла",help:"За OnceVault",
+    eyeShow:"Покажи тайната",eyeHide:"Скрий тайната",durAria:"Изтича след",
+    copy:"Копирай",close:"Затвори",
+    dur:["1 ч","4 ч","8 ч","1 д","2 д","5 д","7 д"],
+    errNoCryptoEnc:"шифроването не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
+    errNoCryptoDec:"дешифрирането не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
+    errNetwork:"мрежова грешка — сървърът е недостъпен",
+    errDecrypt:"дешифрирането се провали — грешен или повреден ключ",
+    errHttp:"неочакван отговор от сървъра (HTTP {0})",
+    srvBurned:"тайната е изтекла или вече е била изгорена",
+    srvExpired:"тайната изтече, преди да бъде извлечена",
+    srvRate:"превишен лимит на заявките, опитайте отново по-късно",
+    srvBlocked:"достъпът е блокиран",
+    srvBackend:"неочаквана грешка в сървъра",
+    srvTooLarge:"тайната надвишава максимално допустимия размер",
+    hTitle:"OnceVault — споделете тайна веднъж, после тя изгаря.",
+    hIntro:"OnceVault ви позволява безопасно да споделите тайна с точно един получател — тя се шифрова във вашия браузър, само един получател може да я отвори и връзката се самоунищожава в мига, в който бъде прочетена.",
+    hQuote:"И ако някой друг се е добрал до връзката, ще разберете: съобщението вече ще е изчезнало!",
+    hHow:"Как работи",
+    hCrypto:"Тайната ви се шифрова <strong>във вашия браузър</strong> с AES-256-GCM, преди каквото и да е да напусне машината ви. Сървърът съхранява само шифрования текст под случаен идентификатор със срок по ваш избор (от 1 час до 7 дни). Ключът за дешифриране пътува <strong>само</strong> във <code>#fragment</code> частта на връзката, която браузърите никога не изпращат към сървър — OnceVault не би могъл да прочете тайната ви, дори да искаше. Първият получател, който отвори връзката, получава тайната; шифрованият текст се изтрива в същия миг. Изтеклите тайни се изтриват непрочетени.",
+    hDur:"<strong>Срокове:</strong> 1 час, 4 часа, 8 часа, 1 ден, 2 дни, 5 дни или 7 дни. Всичко, което не бъде извлечено навреме, се изтрива непрочетено.",
+    hOnce:"<strong>Еднократно четене:</strong> първото отваряне на връзката атомарно извлича и изтрива шифрования текст. Всеки, който отвори същата връзка след това — включително вие — вижда грешка, никога тайната.",
+    legendY:"Жълто — вашата връзка за споделяне, готова за копиране и изпращане.",
+    legendG:"Зелено — тайна, дешифрирана за вас, показана точно веднъж.",
+    legendR:"Червено — грешка: изгорена, изтекла или невалиден ключ.",
+    hHttps:"<strong>Изисква се HTTPS:</strong> Web Crypto API работи само в защитен контекст, затова OnceVault трябва да се обслужва през HTTPS (или localhost за тестове).",
+    hFree:"OnceVault е свободен софтуер",
+    hLicRest:", разпространяван под лиценза MIT. Copyright © 2026 Günther Mair. Създаден изцяло с LLM инструменти (модели Anthropic Claude и MiniMax)."},
+  cs:{name:"Čeština",secret:"Tajemství",encrypt:"Zašifrovat",lang:"Jazyk",
+    theme:"Motiv: systém → tmavý → světlý",help:"O OnceVault",
+    eyeShow:"Zobrazit tajemství",eyeHide:"Skrýt tajemství",durAria:"Vyprší za",
+    copy:"Kopírovat",close:"Zavřít",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNoCryptoDec:"dešifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNetwork:"chyba sítě — server je nedostupný",
+    errDecrypt:"dešifrování selhalo — chybný nebo poškozený klíč",
+    errHttp:"neočekávaná odpověď serveru (HTTP {0})",
+    srvBurned:"tajemství vypršelo nebo již bylo spáleno",
+    srvExpired:"tajemství vypršelo dříve, než bylo vyzvednuto",
+    srvRate:"překročen limit požadavků, zkuste to později",
+    srvBlocked:"přístup zablokován",
+    srvBackend:"neočekávaná chyba serveru",
+    srvTooLarge:"tajemství překračuje maximální povolenou velikost",
+    hTitle:"OnceVault — sdílejte tajemství jednou, pak shoří.",
+    hIntro:"OnceVault vám umožní bezpečně sdílet tajemství s právě jedním příjemcem — je zašifrováno ve vašem prohlížeči, otevřít ho může jen jeden příjemce a odkaz se sám zničí v okamžiku přečtení.",
+    hQuote:"A pokud se k odkazu dostal někdo jiný, poznáte to: zpráva už bude pryč!",
+    hHow:"Pod kapotou",
+    hCrypto:"Vaše tajemství je zašifrováno <strong>ve vašem prohlížeči</strong> pomocí AES-256-GCM dříve, než cokoli opustí váš počítač. Server ukládá pouze šifrovaný text pod náhodným identifikátorem s expirací dle vaší volby (1 hodina až 7 dní). Dešifrovací klíč cestuje <strong>pouze</strong> ve <code>#fragment</code> části odkazu, kterou prohlížeče nikdy neposílají žádnému serveru — OnceVault by vaše tajemství nepřečetl, ani kdyby chtěl. První příjemce, který odkaz otevře, tajemství získá; šifrovaný text je ve stejném okamžiku smazán. Vypršelá tajemství se mažou nepřečtená.",
+    hDur:"<strong>Doby platnosti:</strong> 1 hodina, 4 hodiny, 8 hodin, 1 den, 2 dny, 5 dní nebo 7 dní. Co není včas vyzvednuto, je smazáno nepřečtené.",
+    hOnce:"<strong>Jedno přečtení:</strong> první otevření odkazu atomicky načte a smaže šifrovaný text. Kdokoli otevře stejný odkaz později — včetně vás — uvidí chybu, nikdy tajemství.",
+    legendY:"Žlutá — váš odkaz ke sdílení, připravený ke zkopírování a odeslání.",
+    legendG:"Zelená — tajemství dešifrované pro vás, zobrazené právě jednou.",
+    legendR:"Červená — chyba: spáleno, vypršelo nebo neplatný klíč.",
+    hHttps:"<strong>Vyžadováno HTTPS:</strong> Web Crypto API funguje jen v zabezpečeném kontextu, OnceVault proto musí běžet přes HTTPS (nebo localhost pro testování).",
+    hFree:"OnceVault je svobodný software",
+    hLicRest:", vydaný pod licencí MIT. Copyright © 2026 Günther Mair. Vytvořeno výhradně pomocí LLM nástrojů (modely Anthropic Claude a MiniMax)."},
+  da:{name:"Dansk",secret:"Hemmelighed",encrypt:"Kryptér",lang:"Sprog",
+    theme:"Tema: system → mørkt → lyst",help:"Om OnceVault",
+    eyeShow:"Vis hemmelighed",eyeHide:"Skjul hemmelighed",durAria:"Udløber efter",
+    copy:"Kopiér",close:"Luk",
+    dur:["1 t","4 t","8 t","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"kryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
+    errNoCryptoDec:"dekryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
+    errNetwork:"netværksfejl — serveren kunne ikke nås",
+    errDecrypt:"dekryptering mislykkedes — forkert eller beskadiget nøgle",
+    errHttp:"uventet serversvar (HTTP {0})",
+    srvBurned:"hemmeligheden er udløbet eller allerede brændt",
+    srvExpired:"hemmeligheden udløb, før den blev hentet",
+    srvRate:"anmodningsgrænsen er overskredet, prøv igen senere",
+    srvBlocked:"adgang blokeret",
+    srvBackend:"uventet serverfejl",
+    srvTooLarge:"hemmeligheden overskrider den maksimalt tilladte størrelse",
+    hTitle:"OnceVault — del en hemmelighed én gang, så brænder den.",
+    hIntro:"Med OnceVault kan du sikkert dele en hemmelighed med præcis én modtager — den krypteres i din browser, kun én modtager kan åbne den, og linket selvdestruerer i det øjeblik, det læses.",
+    hQuote:"Og hvis en anden har fået fat i linket, vil du vide det: beskeden vil allerede være væk!",
+    hHow:"Under motorhjelmen",
+    hCrypto:"Din hemmelighed krypteres <strong>i din browser</strong> med AES-256-GCM, før noget som helst forlader din maskine. Serveren gemmer kun den krypterede tekst under et tilfældigt ID med en udløbstid efter dit valg (1 time til 7 dage). Dekrypteringsnøglen rejser <strong>kun</strong> i linkets <code>#fragment</code>, som browsere aldrig sender til nogen server — OnceVault kunne ikke læse din hemmelighed, selv hvis den ville. Den første modtager, der åbner linket, får hemmeligheden; den krypterede tekst slettes i samme øjeblik. Udløbne hemmeligheder slettes ulæst.",
+    hDur:"<strong>Varigheder:</strong> 1 time, 4 timer, 8 timer, 1 dag, 2 dage, 5 dage eller 7 dage. Hvad der ikke hentes i tide, slettes ulæst.",
+    hOnce:"<strong>Læs én gang:</strong> første åbning af linket henter og sletter den krypterede tekst atomart. Enhver, der åbner samme link bagefter — også dig — ser en fejl, aldrig hemmeligheden.",
+    legendY:"Gul — dit delingslink, klar til at kopiere og sende.",
+    legendG:"Grøn — en hemmelighed dekrypteret til dig, vist præcis én gang.",
+    legendR:"Rød — en fejl: brændt, udløbet eller ugyldig nøgle.",
+    hHttps:"<strong>HTTPS påkrævet:</strong> Web Crypto API fungerer kun i en sikker kontekst, så OnceVault skal serveres via HTTPS (eller localhost til test).",
+    hFree:"OnceVault er fri software",
+    hLicRest:", udgivet under MIT-licensen. Copyright © 2026 Günther Mair. Bygget udelukkende med LLM-værktøjer (Anthropic Claude- og MiniMax-modeller)."},
+  de:{name:"Deutsch",secret:"Geheimnis",encrypt:"Verschlüsseln",lang:"Sprache",
+    theme:"Design: System → Dunkel → Hell",help:"Über OnceVault",
+    eyeShow:"Geheimnis anzeigen",eyeHide:"Geheimnis verbergen",durAria:"Läuft ab nach",
+    copy:"Kopieren",close:"Schließen",
+    dur:["1 Std","4 Std","8 Std","1 Tag","2 Tage","5 Tage","7 Tage"],
+    errNoCryptoEnc:"Verschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
+    errNoCryptoDec:"Entschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
+    errNetwork:"Netzwerkfehler — Server nicht erreichbar",
+    errDecrypt:"Entschlüsselung fehlgeschlagen — falscher oder beschädigter Schlüssel",
+    errHttp:"unerwartete Serverantwort (HTTP {0})",
+    srvBurned:"Geheimnis abgelaufen oder bereits verbrannt",
+    srvExpired:"Geheimnis lief ab, bevor es abgerufen wurde",
+    srvRate:"Anfragelimit überschritten, bitte später erneut versuchen",
+    srvBlocked:"Zugriff gesperrt",
+    srvBackend:"unerwarteter Backend-Fehler",
+    srvTooLarge:"Geheimnis überschreitet die maximal zulässige Größe",
+    hTitle:"OnceVault — teile ein Geheimnis einmal, dann verbrennt es.",
+    hIntro:"Mit OnceVault teilst du ein Geheimnis sicher mit genau einem Empfänger — es wird in deinem Browser verschlüsselt, nur ein Empfänger kann es öffnen, und der Link zerstört sich in dem Moment, in dem er gelesen wird.",
+    hQuote:"Und falls jemand anderes an den Link gelangt ist, wirst du es wissen: Die Nachricht ist dann bereits weg!",
+    hHow:"Unter der Haube",
+    hCrypto:"Dein Geheimnis wird <strong>in deinem Browser</strong> mit AES-256-GCM verschlüsselt, bevor irgendetwas deinen Rechner verlässt. Der Server speichert nur den Geheimtext unter einer zufälligen ID mit einer Ablaufzeit deiner Wahl (1 Stunde bis 7 Tage). Der Schlüssel reist <strong>ausschließlich</strong> im <code>#fragment</code> des Links, das Browser nie an einen Server senden — OnceVault könnte dein Geheimnis nicht lesen, selbst wenn es wollte. Der erste Empfänger, der den Link öffnet, erhält das Geheimnis; der Geheimtext wird im selben Moment gelöscht. Abgelaufene Geheimnisse werden ungelesen gelöscht.",
+    hDur:"<strong>Laufzeiten:</strong> 1 Stunde, 4 Stunden, 8 Stunden, 1 Tag, 2 Tage, 5 Tage oder 7 Tage. Was nicht rechtzeitig abgerufen wird, wird ungelesen gelöscht.",
+    hOnce:"<strong>Einmal-Lesen:</strong> Das erste Öffnen des Links ruft den Geheimtext atomar ab und löscht ihn. Wer denselben Link danach öffnet — auch du selbst — sieht einen Fehler, nie das Geheimnis.",
+    legendY:"Gelb — dein Teilen-Link, bereit zum Kopieren und Versenden.",
+    legendG:"Grün — ein für dich entschlüsseltes Geheimnis, genau einmal angezeigt.",
+    legendR:"Rot — ein Fehler: verbrannt, abgelaufen oder ungültiger Schlüssel.",
+    hHttps:"<strong>HTTPS erforderlich:</strong> Die Web Crypto API funktioniert nur in einem sicheren Kontext, daher muss OnceVault über HTTPS ausgeliefert werden (oder localhost zum Testen).",
+    hFree:"OnceVault ist freie Software",
+    hLicRest:", veröffentlicht unter der MIT-Lizenz. Copyright © 2026 Günther Mair. Vollständig mit LLM-Werkzeugen erstellt (Anthropic-Claude- und MiniMax-Modelle)."},
+  el:{name:"Ελληνικά",secret:"Μυστικό",encrypt:"Κρυπτογράφηση",lang:"Γλώσσα",
+    theme:"Θέμα: σύστημα → σκούρο → ανοιχτό",help:"Σχετικά με το OnceVault",
+    eyeShow:"Εμφάνιση μυστικού",eyeHide:"Απόκρυψη μυστικού",durAria:"Λήγει μετά από",
+    copy:"Αντιγραφή",close:"Κλείσιμο",
+    dur:["1 ώ","4 ώ","8 ώ","1 ημ","2 ημ","5 ημ","7 ημ"],
+    errNoCryptoEnc:"η κρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
+    errNoCryptoDec:"η αποκρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
+    errNetwork:"σφάλμα δικτύου — αδύνατη η επικοινωνία με τον διακομιστή",
+    errDecrypt:"η αποκρυπτογράφηση απέτυχε — λάθος ή κατεστραμμένο κλειδί",
+    errHttp:"μη αναμενόμενη απόκριση διακομιστή (HTTP {0})",
+    srvBurned:"το μυστικό έληξε ή έχει ήδη καεί",
+    srvExpired:"το μυστικό έληξε πριν ανακτηθεί",
+    srvRate:"υπέρβαση ορίου αιτημάτων, δοκιμάστε ξανά αργότερα",
+    srvBlocked:"η πρόσβαση αποκλείστηκε",
+    srvBackend:"μη αναμενόμενο σφάλμα διακομιστή",
+    srvTooLarge:"το μυστικό υπερβαίνει το μέγιστο επιτρεπόμενο μέγεθος",
+    hTitle:"OnceVault — μοιραστείτε ένα μυστικό μία φορά, μετά καίγεται.",
+    hIntro:"Το OnceVault σάς επιτρέπει να μοιραστείτε με ασφάλεια ένα μυστικό με ακριβώς έναν παραλήπτη — κρυπτογραφείται στον browser σας, μόνο ένας παραλήπτης μπορεί να το ανοίξει και ο σύνδεσμος αυτοκαταστρέφεται τη στιγμή που διαβάζεται.",
+    hQuote:"Κι αν κάποιος άλλος απέκτησε τον σύνδεσμο, θα το μάθετε: το μήνυμα θα έχει ήδη εξαφανιστεί!",
+    hHow:"Πώς λειτουργεί",
+    hCrypto:"Το μυστικό σας κρυπτογραφείται <strong>στον browser σας</strong> με AES-256-GCM πριν οτιδήποτε φύγει από το μηχάνημά σας. Ο διακομιστής αποθηκεύει μόνο το κρυπτογραφημένο κείμενο κάτω από ένα τυχαίο αναγνωριστικό με λήξη της επιλογής σας (1 ώρα έως 7 ημέρες). Το κλειδί αποκρυπτογράφησης ταξιδεύει <strong>μόνο</strong> στο <code>#fragment</code> του συνδέσμου, το οποίο οι browsers δεν στέλνουν ποτέ σε κανέναν διακομιστή — το OnceVault δεν θα μπορούσε να διαβάσει το μυστικό σας ακόμη κι αν το ήθελε. Ο πρώτος παραλήπτης που ανοίγει τον σύνδεσμο λαμβάνει το μυστικό· το κρυπτογραφημένο κείμενο διαγράφεται την ίδια στιγμή. Τα ληγμένα μυστικά διαγράφονται αδιάβαστα.",
+    hDur:"<strong>Διάρκειες:</strong> 1 ώρα, 4 ώρες, 8 ώρες, 1 ημέρα, 2 ημέρες, 5 ημέρες ή 7 ημέρες. Ό,τι δεν ανακτηθεί εγκαίρως διαγράφεται αδιάβαστο.",
+    hOnce:"<strong>Μία ανάγνωση:</strong> το πρώτο άνοιγμα του συνδέσμου ανακτά και διαγράφει ατομικά το κρυπτογραφημένο κείμενο. Όποιος ανοίξει τον ίδιο σύνδεσμο αργότερα — ακόμη κι εσείς — βλέπει σφάλμα, ποτέ το μυστικό.",
+    legendY:"Κίτρινο — ο σύνδεσμος κοινοποίησης, έτοιμος για αντιγραφή και αποστολή.",
+    legendG:"Πράσινο — ένα μυστικό αποκρυπτογραφημένο για εσάς, εμφανίζεται ακριβώς μία φορά.",
+    legendR:"Κόκκινο — σφάλμα: καμένο, ληγμένο ή μη έγκυρο κλειδί.",
+    hHttps:"<strong>Απαιτείται HTTPS:</strong> το Web Crypto API λειτουργεί μόνο σε ασφαλές περιβάλλον, οπότε το OnceVault πρέπει να σερβίρεται μέσω HTTPS (ή localhost για δοκιμές).",
+    hFree:"Το OnceVault είναι ελεύθερο λογισμικό",
+    hLicRest:", υπό την άδεια MIT. Copyright © 2026 Günther Mair. Κατασκευασμένο εξ ολοκλήρου με εργαλεία LLM (μοντέλα Anthropic Claude και MiniMax)."},
+  es:{name:"Español",secret:"Secreto",encrypt:"Cifrar",lang:"Idioma",
+    theme:"Tema: sistema → oscuro → claro",help:"Acerca de OnceVault",
+    eyeShow:"Mostrar el secreto",eyeHide:"Ocultar el secreto",durAria:"Caduca tras",
+    copy:"Copiar",close:"Cerrar",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"cifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
+    errNoCryptoDec:"descifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
+    errNetwork:"error de red — no se pudo contactar con el servidor",
+    errDecrypt:"fallo al descifrar — clave errónea o dañada",
+    errHttp:"respuesta inesperada del servidor (HTTP {0})",
+    srvBurned:"el secreto caducó o ya fue quemado",
+    srvExpired:"el secreto caducó antes de ser recuperado",
+    srvRate:"límite de peticiones superado, inténtelo más tarde",
+    srvBlocked:"acceso bloqueado",
+    srvBackend:"fallo inesperado del servidor",
+    srvTooLarge:"el secreto supera el tamaño máximo permitido",
+    hTitle:"OnceVault — comparte un secreto una vez, luego arde.",
+    hIntro:"OnceVault te permite compartir un secreto de forma segura con exactamente un destinatario — se cifra en tu navegador, solo un destinatario puede abrirlo y el enlace se autodestruye en el momento en que se lee.",
+    hQuote:"Y si alguien más consiguió el enlace, lo sabrás: ¡el mensaje ya habrá desaparecido!",
+    hHow:"Bajo el capó",
+    hCrypto:"Tu secreto se cifra <strong>en tu navegador</strong> con AES-256-GCM antes de que nada salga de tu máquina. El servidor solo almacena el texto cifrado bajo un ID aleatorio con la caducidad que elijas (de 1 hora a 7 días). La clave de descifrado viaja <strong>solo</strong> en el <code>#fragment</code> del enlace, que los navegadores nunca envían a ningún servidor — OnceVault no podría leer tu secreto aunque quisiera. El primer destinatario que abre el enlace recibe el secreto; el texto cifrado se borra en ese mismo instante. Los secretos caducados se borran sin leer.",
+    hDur:"<strong>Duraciones:</strong> 1 hora, 4 horas, 8 horas, 1 día, 2 días, 5 días o 7 días. Lo que no se recupere a tiempo se borra sin leer.",
+    hOnce:"<strong>Lectura única:</strong> la primera apertura del enlace recupera y borra el texto cifrado de forma atómica. Quien abra el mismo enlace después — incluido tú — verá un error, nunca el secreto.",
+    legendY:"Amarillo — tu enlace para compartir, listo para copiar y enviar.",
+    legendG:"Verde — un secreto descifrado para ti, mostrado exactamente una vez.",
+    legendR:"Rojo — un error: quemado, caducado o clave no válida.",
+    hHttps:"<strong>HTTPS obligatorio:</strong> la Web Crypto API solo funciona en un contexto seguro, por lo que OnceVault debe servirse por HTTPS (o localhost para pruebas).",
+    hFree:"OnceVault es software libre",
+    hLicRest:", publicado bajo la licencia MIT. Copyright © 2026 Günther Mair. Construido íntegramente con herramientas LLM (modelos Anthropic Claude y MiniMax)."},
+  et:{name:"Eesti",secret:"Saladus",encrypt:"Krüpteeri",lang:"Keel",
+    theme:"Teema: süsteem → tume → hele",help:"OnceVaultist",
+    eyeShow:"Näita saladust",eyeHide:"Peida saladus",durAria:"Aegub pärast",
+    copy:"Kopeeri",close:"Sulge",
+    dur:["1 t","4 t","8 t","1 p","2 p","5 p","7 p"],
+    errNoCryptoEnc:"krüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
+    errNoCryptoDec:"dekrüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
+    errNetwork:"võrguviga — serveriga ei saadud ühendust",
+    errDecrypt:"dekrüpteerimine ebaõnnestus — vale või rikutud võti",
+    errHttp:"ootamatu serveri vastus (HTTP {0})",
+    srvBurned:"saladus on aegunud või juba põletatud",
+    srvExpired:"saladus aegus enne, kui see kätte saadi",
+    srvRate:"päringulimiit ületatud, proovige hiljem uuesti",
+    srvBlocked:"juurdepääs blokeeritud",
+    srvBackend:"ootamatu serveri tõrge",
+    srvTooLarge:"saladus ületab suurima lubatud suuruse",
+    hTitle:"OnceVault — jaga saladust üks kord, siis see põleb.",
+    hIntro:"OnceVault võimaldab jagada saladust turvaliselt täpselt ühe saajaga — see krüpteeritakse sinu brauseris, ainult üks saaja saab selle avada ja link hävitab end lugemise hetkel.",
+    hQuote:"Ja kui keegi teine lingi kätte sai, saad sa sellest teada: sõnum on siis juba kadunud!",
+    hHow:"Kuidas see töötab",
+    hCrypto:"Sinu saladus krüpteeritakse <strong>sinu brauseris</strong> AES-256-GCM-iga, enne kui midagi sinu masinast lahkub. Server hoiab ainult krüpteeritud teksti juhusliku ID all koos sinu valitud aegumisajaga (1 tund kuni 7 päeva). Dekrüpteerimisvõti liigub <strong>ainult</strong> lingi <code>#fragment</code> osas, mida brauserid ei saada kunagi ühelegi serverile — OnceVault ei saaks sinu saladust lugeda isegi siis, kui tahaks. Esimene saaja, kes lingi avab, saab saladuse; krüpteeritud tekst kustutatakse samal hetkel. Aegunud saladused kustutatakse lugemata.",
+    hDur:"<strong>Kestused:</strong> 1 tund, 4 tundi, 8 tundi, 1 päev, 2 päeva, 5 päeva või 7 päeva. Mida õigel ajal kätte ei saada, kustutatakse lugemata.",
+    hOnce:"<strong>Ühekordne lugemine:</strong> lingi esimene avamine laeb ja kustutab krüpteeritud teksti atomaarselt. Igaüks, kes sama lingi hiljem avab — ka sina ise — näeb viga, mitte kunagi saladust.",
+    legendY:"Kollane — sinu jagamislink, valmis kopeerimiseks ja saatmiseks.",
+    legendG:"Roheline — sinu jaoks dekrüpteeritud saladus, kuvatakse täpselt üks kord.",
+    legendR:"Punane — viga: põletatud, aegunud või vigane võti.",
+    hHttps:"<strong>Vajalik on HTTPS:</strong> Web Crypto API töötab ainult turvalises kontekstis, seega tuleb OnceVault serveerida üle HTTPS-i (või testimiseks localhostis).",
+    hFree:"OnceVault on vaba tarkvara",
+    hLicRest:", välja antud MIT-litsentsi all. Copyright © 2026 Günther Mair. Loodud täielikult LLM-tööriistadega (Anthropic Claude'i ja MiniMaxi mudelid)."},
+  fi:{name:"Suomi",secret:"Salaisuus",encrypt:"Salaa",lang:"Kieli",
+    theme:"Teema: järjestelmä → tumma → vaalea",help:"Tietoja OnceVaultista",
+    eyeShow:"Näytä salaisuus",eyeHide:"Piilota salaisuus",durAria:"Vanhenee",
+    copy:"Kopioi",close:"Sulje",
+    dur:["1 t","4 t","8 t","1 pv","2 pv","5 pv","7 pv"],
+    errNoCryptoEnc:"salaus ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
+    errNoCryptoDec:"salauksen purku ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
+    errNetwork:"verkkovirhe — palvelimeen ei saatu yhteyttä",
+    errDecrypt:"salauksen purku epäonnistui — väärä tai vioittunut avain",
+    errHttp:"odottamaton palvelimen vastaus (HTTP {0})",
+    srvBurned:"salaisuus on vanhentunut tai jo poltettu",
+    srvExpired:"salaisuus vanheni ennen kuin se noudettiin",
+    srvRate:"pyyntöraja ylittyi, yritä myöhemmin uudelleen",
+    srvBlocked:"pääsy estetty",
+    srvBackend:"odottamaton palvelinvirhe",
+    srvTooLarge:"salaisuus ylittää suurimman sallitun koon",
+    hTitle:"OnceVault — jaa salaisuus kerran, sitten se palaa.",
+    hIntro:"OnceVaultilla jaat salaisuuden turvallisesti täsmälleen yhdelle vastaanottajalle — se salataan selaimessasi, vain yksi vastaanottaja voi avata sen, ja linkki tuhoutuu sillä hetkellä kun se luetaan.",
+    hQuote:"Ja jos joku muu sai linkin käsiinsä, sinä tiedät sen: viesti on jo poissa!",
+    hHow:"Konepellin alla",
+    hCrypto:"Salaisuutesi salataan <strong>selaimessasi</strong> AES-256-GCM:llä ennen kuin mitään lähtee koneeltasi. Palvelin tallentaa vain salatun tekstin satunnaisen tunnisteen alle valitsemallasi vanhenemisajalla (1 tunnista 7 päivään). Purkuavain kulkee <strong>vain</strong> linkin <code>#fragment</code>-osassa, jota selaimet eivät koskaan lähetä millekään palvelimelle — OnceVault ei voisi lukea salaisuuttasi vaikka haluaisi. Ensimmäinen linkin avaava vastaanottaja saa salaisuuden; salattu teksti poistetaan samalla hetkellä. Vanhentuneet salaisuudet poistetaan lukemattomina.",
+    hDur:"<strong>Kestot:</strong> 1 tunti, 4 tuntia, 8 tuntia, 1 päivä, 2 päivää, 5 päivää tai 7 päivää. Mitä ei noudeta ajoissa, poistetaan lukemattomana.",
+    hOnce:"<strong>Kertaluku:</strong> linkin ensimmäinen avaus noutaa ja poistaa salatun tekstin atomisesti. Kuka tahansa saman linkin myöhemmin avaava — myös sinä — näkee virheen, ei koskaan salaisuutta.",
+    legendY:"Keltainen — jakolinkkisi, valmis kopioitavaksi ja lähetettäväksi.",
+    legendG:"Vihreä — sinulle purettu salaisuus, näytetään täsmälleen kerran.",
+    legendR:"Punainen — virhe: poltettu, vanhentunut tai virheellinen avain.",
+    hHttps:"<strong>HTTPS vaaditaan:</strong> Web Crypto API toimii vain suojatussa kontekstissa, joten OnceVault on tarjottava HTTPS:n yli (tai localhostissa testausta varten).",
+    hFree:"OnceVault on vapaa ohjelmisto",
+    hLicRest:", julkaistu MIT-lisenssillä. Copyright © 2026 Günther Mair. Rakennettu kokonaan LLM-työkaluilla (Anthropic Claude- ja MiniMax-mallit)."},
+  fr:{name:"Français",secret:"Secret",encrypt:"Chiffrer",lang:"Langue",
+    theme:"Thème : système → sombre → clair",help:"À propos d'OnceVault",
+    eyeShow:"Afficher le secret",eyeHide:"Masquer le secret",durAria:"Expire après",
+    copy:"Copier",close:"Fermer",
+    dur:["1 h","4 h","8 h","1 j","2 j","5 j","7 j"],
+    errNoCryptoEnc:"chiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
+    errNoCryptoDec:"déchiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
+    errNetwork:"erreur réseau — impossible de joindre le serveur",
+    errDecrypt:"échec du déchiffrement — clé erronée ou corrompue",
+    errHttp:"réponse inattendue du serveur (HTTP {0})",
+    srvBurned:"secret expiré ou déjà brûlé",
+    srvExpired:"le secret a expiré avant d'être récupéré",
+    srvRate:"limite de requêtes dépassée, réessayez plus tard",
+    srvBlocked:"accès bloqué",
+    srvBackend:"défaillance inattendue du serveur",
+    srvTooLarge:"le secret dépasse la taille maximale autorisée",
+    hTitle:"OnceVault — partagez un secret une fois, puis il brûle.",
+    hIntro:"OnceVault vous permet de partager un secret en toute sécurité avec exactement un destinataire — il est chiffré dans votre navigateur, un seul destinataire peut l'ouvrir, et le lien s'autodétruit à l'instant où il est lu.",
+    hQuote:"Et si quelqu'un d'autre a obtenu le lien, vous le saurez : le message aura déjà disparu !",
+    hHow:"Sous le capot",
+    hCrypto:"Votre secret est chiffré <strong>dans votre navigateur</strong> avec AES-256-GCM avant que quoi que ce soit ne quitte votre machine. Le serveur ne stocke que le texte chiffré sous un identifiant aléatoire avec l'expiration de votre choix (de 1 heure à 7 jours). La clé de déchiffrement ne voyage <strong>que</strong> dans le <code>#fragment</code> du lien de partage, que les navigateurs n'envoient jamais à aucun serveur — OnceVault ne pourrait pas lire votre secret même s'il le voulait. Le premier destinataire à ouvrir le lien reçoit le secret ; le texte chiffré est supprimé au même instant. Les secrets expirés sont supprimés sans avoir été lus.",
+    hDur:"<strong>Durées :</strong> 1 heure, 4 heures, 8 heures, 1 jour, 2 jours, 5 jours ou 7 jours. Ce qui n'est pas récupéré à temps est supprimé sans être lu.",
+    hOnce:"<strong>Lecture unique :</strong> la première ouverture du lien récupère et supprime le texte chiffré de façon atomique. Quiconque ouvre ensuite le même lien — vous y compris — voit une erreur, jamais le secret.",
+    legendY:"Jaune — votre lien de partage, prêt à copier et envoyer.",
+    legendG:"Vert — un secret déchiffré pour vous, affiché exactement une fois.",
+    legendR:"Rouge — une erreur : brûlé, expiré ou clé invalide.",
+    hHttps:"<strong>HTTPS requis :</strong> l'API Web Crypto ne fonctionne que dans un contexte sécurisé, OnceVault doit donc être servi via HTTPS (ou localhost pour les tests).",
+    hFree:"OnceVault est un logiciel libre",
+    hLicRest:", publié sous licence MIT. Copyright © 2026 Günther Mair. Entièrement construit avec des outils LLM (modèles Anthropic Claude et MiniMax)."},
+  ga:{name:"Gaeilge",secret:"Rún",encrypt:"Criptigh",lang:"Teanga",
+    theme:"Téama: córas → dorcha → geal",help:"Maidir le OnceVault",
+    eyeShow:"Taispeáin an rún",eyeHide:"Folaigh an rún",durAria:"Éagann tar éis",
+    copy:"Cóipeáil",close:"Dún",
+    dur:["1 u","4 u","8 u","1 lá","2 lá","5 lá","7 lá"],
+    errNoCryptoEnc:"níl criptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
+    errNoCryptoDec:"níl díchriptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
+    errNetwork:"earráid líonra — níorbh fhéidir an freastalaí a shroicheadh",
+    errDecrypt:"theip ar an díchriptiú — eochair mhícheart nó truaillithe",
+    errHttp:"freagra gan choinne ón bhfreastalaí (HTTP {0})",
+    srvBurned:"tá an rún imithe in éag nó dóite cheana",
+    srvExpired:"chuaigh an rún in éag sula bhfuarthas é",
+    srvRate:"sáraíodh teorainn na n-iarratas, bain triail eile as ar ball",
+    srvBlocked:"cosc ar rochtain",
+    srvBackend:"teip gan choinne ar an bhfreastalaí",
+    srvTooLarge:"sáraíonn an rún an uasmhéid cheadaithe",
+    hTitle:"OnceVault — roinn rún uair amháin, ansin dónn sé.",
+    hIntro:"Ligeann OnceVault duit rún a roinnt go sábháilte le faighteoir amháin go díreach — criptítear i do bhrabhsálaí é, ní féidir ach le faighteoir amháin é a oscailt, agus scriosann an nasc é féin an nóiméad a léitear é.",
+    hQuote:"Agus má fuair duine eile an nasc, beidh a fhios agat: beidh an teachtaireacht imithe cheana féin!",
+    hHow:"Faoin gcochall",
+    hCrypto:"Criptítear do rún <strong>i do bhrabhsálaí</strong> le AES-256-GCM sula bhfágann aon rud do mheaisín. Ní stórálann an freastalaí ach an téacs criptithe faoi aitheantóir randamach le dáta éaga de do rogha (1 uair go 7 lá). Ní thaistealaíonn an eochair díchriptithe ach sa <code>#fragment</code> den nasc, nach seolann brabhsálaithe chuig aon fhreastalaí riamh — ní fhéadfadh OnceVault do rún a léamh fiú dá mba mhian leis. Faigheann an chéad fhaighteoir a osclaíonn an nasc an rún; scriostar an téacs criptithe ag an nóiméad céanna. Scriostar rúin atá imithe in éag gan iad a léamh.",
+    hDur:"<strong>Tréimhsí:</strong> 1 uair, 4 huaire, 8 n-uaire, 1 lá, 2 lá, 5 lá nó 7 lá. Scriostar gan léamh aon rud nach bhfaightear in am.",
+    hOnce:"<strong>Léamh aonair:</strong> faigheann agus scriosann an chéad oscailt den nasc an téacs criptithe go hadamhach. Feiceann aon duine a osclaíonn an nasc céanna ina dhiaidh sin — tú féin san áireamh — earráid, ní an rún go deo.",
+    legendY:"Buí — do nasc roinnte, réidh le cóipeáil agus le seoladh.",
+    legendG:"Glas — rún díchriptithe duit, taispeánta uair amháin go díreach.",
+    legendR:"Dearg — earráid: dóite, imithe in éag, nó eochair neamhbhailí.",
+    hHttps:"<strong>HTTPS de dhíth:</strong> ní oibríonn an Web Crypto API ach i gcomhthéacs slán, mar sin ní mór OnceVault a sholáthar thar HTTPS (nó localhost le haghaidh tástála).",
+    hFree:"Is saorbhogearraí é OnceVault",
+    hLicRest:", eisithe faoin gceadúnas MIT. Copyright © 2026 Günther Mair. Tógtha go hiomlán le huirlisí LLM (samhlacha Anthropic Claude agus MiniMax)."},
+  hr:{name:"Hrvatski",secret:"Tajna",encrypt:"Šifriraj",lang:"Jezik",
+    theme:"Tema: sustav → tamna → svijetla",help:"O OnceVaultu",
+    eyeShow:"Prikaži tajnu",eyeHide:"Sakrij tajnu",durAria:"Istječe nakon",
+    copy:"Kopiraj",close:"Zatvori",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
+    errNoCryptoDec:"dešifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
+    errNetwork:"mrežna pogreška — poslužitelj nije dostupan",
+    errDecrypt:"dešifriranje nije uspjelo — pogrešan ili oštećen ključ",
+    errHttp:"neočekivan odgovor poslužitelja (HTTP {0})",
+    srvBurned:"tajna je istekla ili je već spaljena",
+    srvExpired:"tajna je istekla prije nego što je preuzeta",
+    srvRate:"prekoračeno ograničenje zahtjeva, pokušajte kasnije",
+    srvBlocked:"pristup blokiran",
+    srvBackend:"neočekivana pogreška poslužitelja",
+    srvTooLarge:"tajna premašuje najveću dopuštenu veličinu",
+    hTitle:"OnceVault — podijelite tajnu jednom, zatim izgori.",
+    hIntro:"OnceVault vam omogućuje sigurno dijeljenje tajne s točno jednim primateljem — šifrira se u vašem pregledniku, samo je jedan primatelj može otvoriti, a poveznica se samouništava u trenutku čitanja.",
+    hQuote:"A ako je netko drugi došao do poveznice, znat ćete: poruka će već biti nestala!",
+    hHow:"Ispod haube",
+    hCrypto:"Vaša se tajna šifrira <strong>u vašem pregledniku</strong> pomoću AES-256-GCM prije nego što išta napusti vaše računalo. Poslužitelj pohranjuje samo šifrirani tekst pod slučajnim identifikatorom s rokom po vašem izboru (od 1 sata do 7 dana). Ključ za dešifriranje putuje <strong>samo</strong> u <code>#fragment</code> dijelu poveznice, koji preglednici nikad ne šalju nijednom poslužitelju — OnceVault ne bi mogao pročitati vašu tajnu čak i da želi. Prvi primatelj koji otvori poveznicu dobiva tajnu; šifrirani tekst briše se u istom trenutku. Istekle tajne brišu se nepročitane.",
+    hDur:"<strong>Trajanja:</strong> 1 sat, 4 sata, 8 sati, 1 dan, 2 dana, 5 dana ili 7 dana. Što ne bude preuzeto na vrijeme, briše se nepročitano.",
+    hOnce:"<strong>Jednokratno čitanje:</strong> prvo otvaranje poveznice atomarno dohvaća i briše šifrirani tekst. Tko god poslije otvori istu poveznicu — uključujući vas — vidi pogrešku, nikad tajnu.",
+    legendY:"Žuto — vaša poveznica za dijeljenje, spremna za kopiranje i slanje.",
+    legendG:"Zeleno — tajna dešifrirana za vas, prikazana točno jednom.",
+    legendR:"Crveno — pogreška: spaljeno, isteklo ili neispravan ključ.",
+    hHttps:"<strong>Potreban je HTTPS:</strong> Web Crypto API radi samo u sigurnom kontekstu, pa OnceVault mora biti poslužen preko HTTPS-a (ili localhosta za testiranje).",
+    hFree:"OnceVault je slobodan softver",
+    hLicRest:", objavljen pod licencijom MIT. Copyright © 2026 Günther Mair. U cijelosti izrađen LLM alatima (modeli Anthropic Claude i MiniMax)."},
+  hu:{name:"Magyar",secret:"Titok",encrypt:"Titkosítás",lang:"Nyelv",
+    theme:"Téma: rendszer → sötét → világos",help:"A OnceVaultról",
+    eyeShow:"Titok megjelenítése",eyeHide:"Titok elrejtése",durAria:"Lejár ennyi után",
+    copy:"Másolás",close:"Bezárás",
+    dur:["1 ó","4 ó","8 ó","1 nap","2 nap","5 nap","7 nap"],
+    errNoCryptoEnc:"a titkosítás nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
+    errNoCryptoDec:"a visszafejtés nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
+    errNetwork:"hálózati hiba — a szerver nem érhető el",
+    errDecrypt:"a visszafejtés sikertelen — hibás vagy sérült kulcs",
+    errHttp:"váratlan szerverválasz (HTTP {0})",
+    srvBurned:"a titok lejárt vagy már elégett",
+    srvExpired:"a titok lejárt, mielőtt lekérték volna",
+    srvRate:"kérési korlát túllépve, próbálja később",
+    srvBlocked:"hozzáférés letiltva",
+    srvBackend:"váratlan szerverhiba",
+    srvTooLarge:"a titok meghaladja a megengedett legnagyobb méretet",
+    hTitle:"OnceVault — ossz meg egy titkot egyszer, aztán elég.",
+    hIntro:"A OnceVault segítségével biztonságosan oszthatsz meg egy titkot pontosan egy címzettel — a böngésződben titkosítódik, csak egyetlen címzett nyithatja meg, és a link megsemmisíti magát abban a pillanatban, amikor elolvassák.",
+    hQuote:"És ha valaki más szerezte meg a linket, tudni fogod: az üzenet addigra már eltűnt!",
+    hHow:"A motorháztető alatt",
+    hCrypto:"A titkod <strong>a böngésződben</strong> titkosítódik AES-256-GCM-mel, mielőtt bármi elhagyná a gépedet. A szerver csak a titkosított szöveget tárolja egy véletlen azonosító alatt, az általad választott lejárattal (1 órától 7 napig). A visszafejtő kulcs <strong>kizárólag</strong> a link <code>#fragment</code> részében utazik, amelyet a böngészők soha nem küldenek el egyetlen szervernek sem — a OnceVault akkor sem tudná elolvasni a titkodat, ha akarná. Az első címzett, aki megnyitja a linket, megkapja a titkot; a titkosított szöveg ugyanabban a pillanatban törlődik. A lejárt titkok olvasatlanul törlődnek.",
+    hDur:"<strong>Időtartamok:</strong> 1 óra, 4 óra, 8 óra, 1 nap, 2 nap, 5 nap vagy 7 nap. Ami nem kerül időben lekérésre, olvasatlanul törlődik.",
+    hOnce:"<strong>Egyszeri olvasás:</strong> a link első megnyitása atomi módon lekéri és törli a titkosított szöveget. Aki utána nyitja meg ugyanazt a linket — téged is beleértve — hibát lát, sosem a titkot.",
+    legendY:"Sárga — a megosztási linked, másolásra és küldésre készen.",
+    legendG:"Zöld — egy neked visszafejtett titok, pontosan egyszer megjelenítve.",
+    legendR:"Piros — hiba: elégett, lejárt vagy érvénytelen kulcs.",
+    hHttps:"<strong>HTTPS szükséges:</strong> a Web Crypto API csak biztonságos környezetben működik, ezért a OnceVaultot HTTPS-en keresztül kell kiszolgálni (vagy teszteléshez localhoston).",
+    hFree:"A OnceVault szabad szoftver",
+    hLicRest:", MIT licenc alatt kiadva. Copyright © 2026 Günther Mair. Teljes egészében LLM-eszközökkel készült (Anthropic Claude és MiniMax modellek)."},
+  it:{name:"Italiano",secret:"Segreto",encrypt:"Cifra",lang:"Lingua",
+    theme:"Tema: sistema → scuro → chiaro",help:"Informazioni su OnceVault",
+    eyeShow:"Mostra il segreto",eyeHide:"Nascondi il segreto",durAria:"Scade dopo",
+    copy:"Copia",close:"Chiudi",
+    dur:["1 h","4 h","8 h","1 g","2 g","5 g","7 g"],
+    errNoCryptoEnc:"cifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
+    errNoCryptoDec:"decifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
+    errNetwork:"errore di rete — impossibile raggiungere il server",
+    errDecrypt:"decifratura non riuscita — chiave errata o danneggiata",
+    errHttp:"risposta inattesa dal server (HTTP {0})",
+    srvBurned:"il segreto è scaduto o è già stato bruciato",
+    srvExpired:"il segreto è scaduto prima di essere recuperato",
+    srvRate:"limite di richieste superato, riprova più tardi",
+    srvBlocked:"accesso bloccato",
+    srvBackend:"errore imprevisto del server",
+    srvTooLarge:"il segreto supera la dimensione massima consentita",
+    hTitle:"OnceVault — condividi un segreto una volta, poi brucia.",
+    hIntro:"OnceVault ti permette di condividere in sicurezza un segreto con esattamente un destinatario — viene cifrato nel tuo browser, solo un destinatario può aprirlo e il link si autodistrugge nel momento in cui viene letto.",
+    hQuote:"E se qualcun altro ha ottenuto il link, lo saprai: il messaggio sarà già sparito!",
+    hHow:"Sotto il cofano",
+    hCrypto:"Il tuo segreto viene cifrato <strong>nel tuo browser</strong> con AES-256-GCM prima che qualsiasi cosa lasci la tua macchina. Il server memorizza solo il testo cifrato sotto un ID casuale con la scadenza che scegli (da 1 ora a 7 giorni). La chiave di decifratura viaggia <strong>solo</strong> nel <code>#fragment</code> del link, che i browser non inviano mai a nessun server — OnceVault non potrebbe leggere il tuo segreto nemmeno volendo. Il primo destinatario che apre il link riceve il segreto; il testo cifrato viene eliminato nello stesso istante. I segreti scaduti vengono eliminati senza essere letti.",
+    hDur:"<strong>Durate:</strong> 1 ora, 4 ore, 8 ore, 1 giorno, 2 giorni, 5 giorni o 7 giorni. Ciò che non viene recuperato in tempo viene eliminato non letto.",
+    hOnce:"<strong>Lettura unica:</strong> la prima apertura del link recupera ed elimina il testo cifrato in modo atomico. Chiunque apra lo stesso link in seguito — te compreso — vede un errore, mai il segreto.",
+    legendY:"Giallo — il tuo link di condivisione, pronto da copiare e inviare.",
+    legendG:"Verde — un segreto decifrato per te, mostrato esattamente una volta.",
+    legendR:"Rosso — un errore: bruciato, scaduto o chiave non valida.",
+    hHttps:"<strong>HTTPS obbligatorio:</strong> la Web Crypto API funziona solo in un contesto sicuro, quindi OnceVault deve essere servito via HTTPS (o localhost per i test).",
+    hFree:"OnceVault è software libero",
+    hLicRest:", rilasciato con licenza MIT. Copyright © 2026 Günther Mair. Realizzato interamente con strumenti LLM (modelli Anthropic Claude e MiniMax)."},
+  lt:{name:"Lietuvių",secret:"Paslaptis",encrypt:"Šifruoti",lang:"Kalba",
+    theme:"Tema: sistema → tamsi → šviesi",help:"Apie OnceVault",
+    eyeShow:"Rodyti paslaptį",eyeHide:"Slėpti paslaptį",durAria:"Galioja iki",
+    copy:"Kopijuoti",close:"Uždaryti",
+    dur:["1 val","4 val","8 val","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
+    errNoCryptoDec:"iššifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
+    errNetwork:"tinklo klaida — nepavyko pasiekti serverio",
+    errDecrypt:"iššifruoti nepavyko — neteisingas arba sugadintas raktas",
+    errHttp:"netikėtas serverio atsakymas (HTTP {0})",
+    srvBurned:"paslaptis nebegalioja arba jau sudeginta",
+    srvExpired:"paslaptis nustojo galioti prieš ją atsiimant",
+    srvRate:"viršyta užklausų riba, bandykite vėliau",
+    srvBlocked:"prieiga užblokuota",
+    srvBackend:"netikėta serverio klaida",
+    srvTooLarge:"paslaptis viršija didžiausią leidžiamą dydį",
+    hTitle:"OnceVault — pasidalykite paslaptimi vieną kartą, tada ji sudega.",
+    hIntro:"OnceVault leidžia saugiai pasidalyti paslaptimi su lygiai vienu gavėju — ji užšifruojama jūsų naršyklėje, atidaryti ją gali tik vienas gavėjas, o nuoroda susinaikina tą akimirką, kai perskaitoma.",
+    hQuote:"O jei nuorodą gavo kas nors kitas, jūs tai sužinosite: žinutės jau nebebus!",
+    hHow:"Kaip tai veikia",
+    hCrypto:"Jūsų paslaptis užšifruojama <strong>jūsų naršyklėje</strong> naudojant AES-256-GCM dar prieš kam nors paliekant jūsų kompiuterį. Serveris saugo tik šifruotą tekstą po atsitiktiniu identifikatoriumi su jūsų pasirinktu galiojimo laiku (nuo 1 valandos iki 7 dienų). Iššifravimo raktas keliauja <strong>tik</strong> nuorodos <code>#fragment</code> dalyje, kurios naršyklės niekada nesiunčia jokiam serveriui — OnceVault negalėtų perskaityti jūsų paslapties, net jei norėtų. Pirmasis nuorodą atidaręs gavėjas gauna paslaptį; šifruotas tekstas ištrinamas tą pačią akimirką. Nebegaliojančios paslaptys ištrinamos neperskaitytos.",
+    hDur:"<strong>Trukmės:</strong> 1 valanda, 4 valandos, 8 valandos, 1 diena, 2 dienos, 5 dienos arba 7 dienos. Kas neatsiimama laiku, ištrinama neperskaityta.",
+    hOnce:"<strong>Vienkartinis skaitymas:</strong> pirmasis nuorodos atidarymas atomiškai gauna ir ištrina šifruotą tekstą. Kas vėliau atidaro tą pačią nuorodą — įskaitant jus — mato klaidą, niekada paslapties.",
+    legendY:"Geltona — jūsų dalijimosi nuoroda, paruošta kopijuoti ir siųsti.",
+    legendG:"Žalia — jums iššifruota paslaptis, parodyta lygiai vieną kartą.",
+    legendR:"Raudona — klaida: sudeginta, nebegalioja arba neteisingas raktas.",
+    hHttps:"<strong>Būtinas HTTPS:</strong> Web Crypto API veikia tik saugiame kontekste, todėl OnceVault turi būti pasiekiamas per HTTPS (arba localhost testavimui).",
+    hFree:"OnceVault yra laisva programinė įranga",
+    hLicRest:", išleista pagal MIT licenciją. Copyright © 2026 Günther Mair. Visiškai sukurta LLM įrankiais (Anthropic Claude ir MiniMax modeliai)."},
+  lv:{name:"Latviešu",secret:"Noslēpums",encrypt:"Šifrēt",lang:"Valoda",
+    theme:"Motīvs: sistēma → tumšs → gaišs",help:"Par OnceVault",
+    eyeShow:"Rādīt noslēpumu",eyeHide:"Slēpt noslēpumu",durAria:"Beidzas pēc",
+    copy:"Kopēt",close:"Aizvērt",
+    dur:["1 st","4 st","8 st","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
+    errNoCryptoDec:"atšifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
+    errNetwork:"tīkla kļūda — serveris nav sasniedzams",
+    errDecrypt:"atšifrēšana neizdevās — nepareiza vai bojāta atslēga",
+    errHttp:"negaidīta servera atbilde (HTTP {0})",
+    srvBurned:"noslēpumam beidzies termiņš vai tas jau ir sadedzināts",
+    srvExpired:"noslēpumam beidzās termiņš, pirms tas tika izgūts",
+    srvRate:"pārsniegts pieprasījumu limits, mēģiniet vēlāk",
+    srvBlocked:"piekļuve bloķēta",
+    srvBackend:"negaidīta servera kļūda",
+    srvTooLarge:"noslēpums pārsniedz maksimāli atļauto izmēru",
+    hTitle:"OnceVault — dalies ar noslēpumu vienreiz, tad tas sadeg.",
+    hIntro:"OnceVault ļauj droši dalīties ar noslēpumu ar tieši vienu saņēmēju — tas tiek šifrēts jūsu pārlūkā, to var atvērt tikai viens saņēmējs, un saite pašiznīcinās brīdī, kad tā tiek izlasīta.",
+    hQuote:"Un ja saiti ieguvis kāds cits, jūs to uzzināsiet: ziņa jau būs pazudusi!",
+    hHow:"Kā tas darbojas",
+    hCrypto:"Jūsu noslēpums tiek šifrēts <strong>jūsu pārlūkā</strong> ar AES-256-GCM, pirms kaut kas pamet jūsu datoru. Serveris glabā tikai šifrēto tekstu zem nejauša identifikatora ar jūsu izvēlētu derīguma termiņu (no 1 stundas līdz 7 dienām). Atšifrēšanas atslēga ceļo <strong>tikai</strong> saites <code>#fragment</code> daļā, kuru pārlūki nekad nenosūta nevienam serverim — OnceVault nevarētu izlasīt jūsu noslēpumu pat tad, ja gribētu. Pirmais saņēmējs, kurš atver saiti, saņem noslēpumu; šifrētais teksts tiek dzēsts tajā pašā mirklī. Noslēpumi, kuriem beidzies termiņš, tiek dzēsti neizlasīti.",
+    hDur:"<strong>Termiņi:</strong> 1 stunda, 4 stundas, 8 stundas, 1 diena, 2 dienas, 5 dienas vai 7 dienas. Kas netiek izgūts laikā, tiek dzēsts neizlasīts.",
+    hOnce:"<strong>Vienreizēja lasīšana:</strong> pirmā saites atvēršana atomāri izgūst un dzēš šifrēto tekstu. Ikviens, kurš pēc tam atver to pašu saiti — arī jūs — redz kļūdu, nekad noslēpumu.",
+    legendY:"Dzeltens — jūsu kopīgošanas saite, gatava kopēšanai un nosūtīšanai.",
+    legendG:"Zaļš — jums atšifrēts noslēpums, parādīts tieši vienu reizi.",
+    legendR:"Sarkans — kļūda: sadedzināts, beidzies termiņš vai nederīga atslēga.",
+    hHttps:"<strong>Nepieciešams HTTPS:</strong> Web Crypto API darbojas tikai drošā kontekstā, tāpēc OnceVault jāpasniedz caur HTTPS (vai localhost testēšanai).",
+    hFree:"OnceVault ir brīvā programmatūra",
+    hLicRest:", izdota ar MIT licenci. Copyright © 2026 Günther Mair. Pilnībā izveidots ar LLM rīkiem (Anthropic Claude un MiniMax modeļi)."},
+  mt:{name:"Malti",secret:"Sigriet",encrypt:"Ikkriptja",lang:"Lingwa",
+    theme:"Tema: sistema → skura → ċara",help:"Dwar OnceVault",
+    eyeShow:"Uri s-sigriet",eyeHide:"Aħbi s-sigriet",durAria:"Jiskadi wara",
+    copy:"Ikkopja",close:"Agħlaq",
+    dur:["1h","4h","8h","1d","2d","5d","7d"],
+    errNoCryptoEnc:"il-kriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
+    errNoCryptoDec:"id-dekriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
+    errNetwork:"żball tan-netwerk — is-server ma setax jintlaħaq",
+    errDecrypt:"id-dekriptaġġ falla — ċavetta ħażina jew korrotta",
+    errHttp:"tweġiba mhux mistennija mis-server (HTTP {0})",
+    srvBurned:"is-sigriet skada jew diġà nħaraq",
+    srvExpired:"is-sigriet skada qabel ma nġabar",
+    srvRate:"inqabeż il-limitu tat-talbiet, erġa pprova aktar tard",
+    srvBlocked:"l-aċċess imblukkat",
+    srvBackend:"ħsara mhux mistennija fis-server",
+    srvTooLarge:"is-sigriet jaqbeż id-daqs massimu permess",
+    hTitle:"OnceVault — aqsam sigriet darba, imbagħad jinħaraq.",
+    hIntro:"OnceVault iħallik taqsam sigriet b'mod sigur ma' riċevitur wieħed eżatt — jiġi kriptat fil-browser tiegħek, riċevitur wieħed biss jista jiftħu, u l-link jeqred lilu nnifsu fil-mument li jinqara.",
+    hQuote:"U jekk xi ħadd ieħor kiseb il-link, int tkun taf: il-messaġġ ikun diġà sparixxa!",
+    hHow:"Kif jaħdem",
+    hCrypto:"Is-sigriet tiegħek jiġi kriptat <strong>fil-browser tiegħek</strong> b'AES-256-GCM qabel ma xi ħaġa titlaq mill-magna tiegħek. Is-server jaħżen biss it-test kriptat taħt ID każwali bi skadenza li tagħżel int (minn siegħa sa 7 ijiem). Iċ-ċavetta tad-dekriptaġġ tivvjaġġa <strong>biss</strong> fil-<code>#fragment</code> tal-link, li l-browsers qatt ma jibagħtu lil ebda server — OnceVault ma jistax jaqra s-sigriet tiegħek anki kieku ried. L-ewwel riċevitur li jiftaħ il-link jirċievi s-sigriet; it-test kriptat jitħassar fl-istess mument. Sigrieti skaduti jitħassru mingħajr ma jinqraw.",
+    hDur:"<strong>Tul ta żmien:</strong> siegħa, 4 sigħat, 8 sigħat, jum, jumejn, 5 ijiem jew 7 ijiem. Dak li ma jinġabarx fil-ħin jitħassar mingħajr ma jinqara.",
+    hOnce:"<strong>Qari ta darba:</strong> l-ewwel ftuħ tal-link jiġbor u jħassar it-test kriptat b'mod atomiku. Kull min jiftaħ l-istess link wara — inkluż int — jara żball, qatt is-sigriet.",
+    legendY:"Isfar — il-link tal-qsim tiegħek, lest biex tikkopjah u tibgħatu.",
+    legendG:"Aħdar — sigriet dekriptat għalik, muri darba biss.",
+    legendR:"Aħmar — żball: maħruq, skadut, jew ċavetta invalida.",
+    hHttps:"<strong>Meħtieġ HTTPS:</strong> il-Web Crypto API taħdem biss f'kuntest sigur, għalhekk OnceVault irid jiġi servut fuq HTTPS (jew localhost għall-ittestjar).",
+    hFree:"OnceVault huwa softwer ħieles",
+    hLicRest:", maħruġ taħt il-liċenzja MIT. Copyright © 2026 Günther Mair. Mibni kompletament b'għodod LLM (mudelli Anthropic Claude u MiniMax)."},
+  nl:{name:"Nederlands",secret:"Geheim",encrypt:"Versleutelen",lang:"Taal",
+    theme:"Thema: systeem → donker → licht",help:"Over OnceVault",
+    eyeShow:"Geheim tonen",eyeHide:"Geheim verbergen",durAria:"Verloopt na",
+    copy:"Kopiëren",close:"Sluiten",
+    dur:["1 u","4 u","8 u","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"versleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
+    errNoCryptoDec:"ontsleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
+    errNetwork:"netwerkfout — de server is niet bereikbaar",
+    errDecrypt:"ontsleutelen mislukt — verkeerde of beschadigde sleutel",
+    errHttp:"onverwacht serverantwoord (HTTP {0})",
+    srvBurned:"geheim is verlopen of al verbrand",
+    srvExpired:"geheim verliep voordat het werd opgehaald",
+    srvRate:"aanvraaglimiet overschreden, probeer het later opnieuw",
+    srvBlocked:"toegang geblokkeerd",
+    srvBackend:"onverwachte serverfout",
+    srvTooLarge:"geheim overschrijdt de maximaal toegestane grootte",
+    hTitle:"OnceVault — deel een geheim één keer, daarna verbrandt het.",
+    hIntro:"Met OnceVault deel je veilig een geheim met precies één ontvanger — het wordt versleuteld in je browser, slechts één ontvanger kan het openen, en de link vernietigt zichzelf op het moment dat hij gelezen wordt.",
+    hQuote:"En als iemand anders de link heeft bemachtigd, weet je het: het bericht is dan al weg!",
+    hHow:"Onder de motorkap",
+    hCrypto:"Je geheim wordt <strong>in je browser</strong> versleuteld met AES-256-GCM voordat er ook maar iets je machine verlaat. De server bewaart alleen de versleutelde tekst onder een willekeurig ID met een vervaltijd naar keuze (1 uur tot 7 dagen). De ontsleutelingssleutel reist <strong>alleen</strong> in het <code>#fragment</code> van de link, dat browsers nooit naar een server sturen — OnceVault zou je geheim niet kunnen lezen, ook al zou het willen. De eerste ontvanger die de link opent krijgt het geheim; de versleutelde tekst wordt op hetzelfde moment gewist. Verlopen geheimen worden ongelezen gewist.",
+    hDur:"<strong>Looptijden:</strong> 1 uur, 4 uur, 8 uur, 1 dag, 2 dagen, 5 dagen of 7 dagen. Wat niet op tijd wordt opgehaald, wordt ongelezen gewist.",
+    hOnce:"<strong>Eenmalig lezen:</strong> de eerste opening van de link haalt de versleutelde tekst atomair op en wist hem. Wie daarna dezelfde link opent — ook jijzelf — ziet een fout, nooit het geheim.",
+    legendY:"Geel — je deellink, klaar om te kopiëren en te versturen.",
+    legendG:"Groen — een voor jou ontsleuteld geheim, precies één keer getoond.",
+    legendR:"Rood — een fout: verbrand, verlopen of ongeldige sleutel.",
+    hHttps:"<strong>HTTPS vereist:</strong> de Web Crypto API werkt alleen in een beveiligde context, dus OnceVault moet via HTTPS worden aangeboden (of localhost om te testen).",
+    hFree:"OnceVault is vrije software",
+    hLicRest:", uitgebracht onder de MIT-licentie. Copyright © 2026 Günther Mair. Volledig gebouwd met LLM-gereedschap (Anthropic Claude- en MiniMax-modellen)."},
+  pl:{name:"Polski",secret:"Sekret",encrypt:"Zaszyfruj",lang:"Język",
+    theme:"Motyw: systemowy → ciemny → jasny",help:"O OnceVault",
+    eyeShow:"Pokaż sekret",eyeHide:"Ukryj sekret",durAria:"Wygasa po",
+    copy:"Kopiuj",close:"Zamknij",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"szyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
+    errNoCryptoDec:"odszyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
+    errNetwork:"błąd sieci — nie można połączyć się z serwerem",
+    errDecrypt:"odszyfrowanie nie powiodło się — błędny lub uszkodzony klucz",
+    errHttp:"nieoczekiwana odpowiedź serwera (HTTP {0})",
+    srvBurned:"sekret wygasł lub został już spalony",
+    srvExpired:"sekret wygasł, zanim został odebrany",
+    srvRate:"przekroczono limit żądań, spróbuj później",
+    srvBlocked:"dostęp zablokowany",
+    srvBackend:"nieoczekiwany błąd serwera",
+    srvTooLarge:"sekret przekracza maksymalny dozwolony rozmiar",
+    hTitle:"OnceVault — udostępnij sekret raz, potem spłonie.",
+    hIntro:"OnceVault pozwala bezpiecznie udostępnić sekret dokładnie jednemu odbiorcy — jest szyfrowany w Twojej przeglądarce, otworzyć go może tylko jeden odbiorca, a link ulega samozniszczeniu w chwili odczytania.",
+    hQuote:"A jeśli link zdobył ktoś inny, dowiesz się o tym: wiadomości już nie będzie!",
+    hHow:"Pod maską",
+    hCrypto:"Twój sekret jest szyfrowany <strong>w Twojej przeglądarce</strong> algorytmem AES-256-GCM, zanim cokolwiek opuści Twój komputer. Serwer przechowuje wyłącznie zaszyfrowany tekst pod losowym identyfikatorem z wybranym przez Ciebie terminem ważności (od 1 godziny do 7 dni). Klucz odszyfrowujący podróżuje <strong>wyłącznie</strong> w części <code>#fragment</code> linku, której przeglądarki nigdy nie wysyłają do żadnego serwera — OnceVault nie mógłby odczytać Twojego sekretu, nawet gdyby chciał. Pierwszy odbiorca, który otworzy link, otrzymuje sekret; zaszyfrowany tekst jest usuwany w tej samej chwili. Wygasłe sekrety są usuwane nieprzeczytane.",
+    hDur:"<strong>Okresy ważności:</strong> 1 godzina, 4 godziny, 8 godzin, 1 dzień, 2 dni, 5 dni lub 7 dni. Co nie zostanie odebrane na czas, jest usuwane nieprzeczytane.",
+    hOnce:"<strong>Jednorazowy odczyt:</strong> pierwsze otwarcie linku atomowo pobiera i usuwa zaszyfrowany tekst. Każdy, kto otworzy ten sam link później — łącznie z Tobą — zobaczy błąd, nigdy sekret.",
+    legendY:"Żółty — Twój link do udostępnienia, gotowy do skopiowania i wysłania.",
+    legendG:"Zielony — sekret odszyfrowany dla Ciebie, wyświetlony dokładnie raz.",
+    legendR:"Czerwony — błąd: spalony, wygasły lub nieprawidłowy klucz.",
+    hHttps:"<strong>Wymagany HTTPS:</strong> Web Crypto API działa tylko w bezpiecznym kontekście, więc OnceVault musi być serwowany przez HTTPS (lub localhost do testów).",
+    hFree:"OnceVault jest wolnym oprogramowaniem",
+    hLicRest:", wydanym na licencji MIT. Copyright © 2026 Günther Mair. Zbudowany w całości narzędziami LLM (modele Anthropic Claude i MiniMax)."},
+  pt:{name:"Português",secret:"Segredo",encrypt:"Cifrar",lang:"Idioma",
+    theme:"Tema: sistema → escuro → claro",help:"Sobre o OnceVault",
+    eyeShow:"Mostrar o segredo",eyeHide:"Ocultar o segredo",durAria:"Expira após",
+    copy:"Copiar",close:"Fechar",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"cifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
+    errNoCryptoDec:"decifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
+    errNetwork:"erro de rede — não foi possível contactar o servidor",
+    errDecrypt:"falha ao decifrar — chave errada ou corrompida",
+    errHttp:"resposta inesperada do servidor (HTTP {0})",
+    srvBurned:"o segredo expirou ou já foi queimado",
+    srvExpired:"o segredo expirou antes de ser recuperado",
+    srvRate:"limite de pedidos excedido, tente novamente mais tarde",
+    srvBlocked:"acesso bloqueado",
+    srvBackend:"falha inesperada do servidor",
+    srvTooLarge:"o segredo excede o tamanho máximo permitido",
+    hTitle:"OnceVault — partilhe um segredo uma vez, depois arde.",
+    hIntro:"O OnceVault permite partilhar um segredo em segurança com exatamente um destinatário — é cifrado no seu navegador, só um destinatário o pode abrir, e a ligação autodestrói-se no momento em que é lida.",
+    hQuote:"E se outra pessoa obteve a ligação, você saberá: a mensagem já terá desaparecido!",
+    hHow:"Por dentro",
+    hCrypto:"O seu segredo é cifrado <strong>no seu navegador</strong> com AES-256-GCM antes de qualquer coisa sair da sua máquina. O servidor guarda apenas o texto cifrado sob um ID aleatório com a validade que escolher (1 hora a 7 dias). A chave de decifra viaja <strong>apenas</strong> no <code>#fragment</code> da ligação, que os navegadores nunca enviam a nenhum servidor — o OnceVault não conseguiria ler o seu segredo nem que quisesse. O primeiro destinatário a abrir a ligação recebe o segredo; o texto cifrado é apagado no mesmo instante. Segredos expirados são apagados sem serem lidos.",
+    hDur:"<strong>Durações:</strong> 1 hora, 4 horas, 8 horas, 1 dia, 2 dias, 5 dias ou 7 dias. O que não for recuperado a tempo é apagado sem ser lido.",
+    hOnce:"<strong>Leitura única:</strong> a primeira abertura da ligação obtém e apaga o texto cifrado de forma atómica. Quem abrir a mesma ligação depois — incluindo você — vê um erro, nunca o segredo.",
+    legendY:"Amarelo — a sua ligação de partilha, pronta a copiar e enviar.",
+    legendG:"Verde — um segredo decifrado para si, mostrado exatamente uma vez.",
+    legendR:"Vermelho — um erro: queimado, expirado ou chave inválida.",
+    hHttps:"<strong>HTTPS obrigatório:</strong> a Web Crypto API só funciona num contexto seguro, pelo que o OnceVault tem de ser servido por HTTPS (ou localhost para testes).",
+    hFree:"O OnceVault é software livre",
+    hLicRest:", publicado sob a licença MIT. Copyright © 2026 Günther Mair. Construído inteiramente com ferramentas LLM (modelos Anthropic Claude e MiniMax)."},
+  ro:{name:"Română",secret:"Secret",encrypt:"Criptează",lang:"Limbă",
+    theme:"Temă: sistem → întunecată → luminoasă",help:"Despre OnceVault",
+    eyeShow:"Arată secretul",eyeHide:"Ascunde secretul",durAria:"Expiră după",
+    copy:"Copiază",close:"Închide",
+    dur:["1 h","4 h","8 h","1 zi","2 zile","5 zile","7 zile"],
+    errNoCryptoEnc:"criptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
+    errNoCryptoDec:"decriptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
+    errNetwork:"eroare de rețea — serverul nu a putut fi contactat",
+    errDecrypt:"decriptarea a eșuat — cheie greșită sau coruptă",
+    errHttp:"răspuns neașteptat de la server (HTTP {0})",
+    srvBurned:"secretul a expirat sau a fost deja ars",
+    srvExpired:"secretul a expirat înainte de a fi preluat",
+    srvRate:"limita de cereri a fost depășită, încercați mai târziu",
+    srvBlocked:"acces blocat",
+    srvBackend:"eroare neașteptată a serverului",
+    srvTooLarge:"secretul depășește dimensiunea maximă permisă",
+    hTitle:"OnceVault — împărtășește un secret o dată, apoi arde.",
+    hIntro:"OnceVault vă permite să împărtășiți în siguranță un secret cu exact un destinatar — este criptat în browserul dvs., doar un singur destinatar îl poate deschide, iar linkul se autodistruge în momentul în care este citit.",
+    hQuote:"Iar dacă altcineva a obținut linkul, veți ști: mesajul va fi deja dispărut!",
+    hHow:"Sub capotă",
+    hCrypto:"Secretul dvs. este criptat <strong>în browserul dvs.</strong> cu AES-256-GCM înainte ca orice să părăsească mașina dvs. Serverul stochează doar textul criptat sub un ID aleatoriu, cu expirarea aleasă de dvs. (de la 1 oră la 7 zile). Cheia de decriptare călătorește <strong>doar</strong> în <code>#fragment</code>-ul linkului, pe care browserele nu îl trimit niciodată vreunui server — OnceVault nu v-ar putea citi secretul nici dacă ar vrea. Primul destinatar care deschide linkul primește secretul; textul criptat este șters în același moment. Secretele expirate sunt șterse necitite.",
+    hDur:"<strong>Durate:</strong> 1 oră, 4 ore, 8 ore, 1 zi, 2 zile, 5 zile sau 7 zile. Ce nu este preluat la timp este șters necitit.",
+    hOnce:"<strong>Citire unică:</strong> prima deschidere a linkului preia și șterge textul criptat în mod atomic. Oricine deschide același link ulterior — inclusiv dvs. — vede o eroare, niciodată secretul.",
+    legendY:"Galben — linkul dvs. de partajare, gata de copiat și trimis.",
+    legendG:"Verde — un secret decriptat pentru dvs., afișat exact o dată.",
+    legendR:"Roșu — o eroare: ars, expirat sau cheie invalidă.",
+    hHttps:"<strong>HTTPS obligatoriu:</strong> Web Crypto API funcționează doar într-un context securizat, deci OnceVault trebuie servit prin HTTPS (sau localhost pentru teste).",
+    hFree:"OnceVault este software liber",
+    hLicRest:", publicat sub licența MIT. Copyright © 2026 Günther Mair. Construit în întregime cu instrumente LLM (modele Anthropic Claude și MiniMax)."},
+  sk:{name:"Slovenčina",secret:"Tajomstvo",encrypt:"Zašifrovať",lang:"Jazyk",
+    theme:"Motív: systém → tmavý → svetlý",help:"O OnceVault",
+    eyeShow:"Zobraziť tajomstvo",eyeHide:"Skryť tajomstvo",durAria:"Vyprší o",
+    copy:"Kopírovať",close:"Zavrieť",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNoCryptoDec:"dešifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNetwork:"chyba siete — server je nedostupný",
+    errDecrypt:"dešifrovanie zlyhalo — nesprávny alebo poškodený kľúč",
+    errHttp:"neočakávaná odpoveď servera (HTTP {0})",
+    srvBurned:"tajomstvo vypršalo alebo už bolo spálené",
+    srvExpired:"tajomstvo vypršalo skôr, než bolo vyzdvihnuté",
+    srvRate:"prekročený limit požiadaviek, skúste neskôr",
+    srvBlocked:"prístup zablokovaný",
+    srvBackend:"neočakávaná chyba servera",
+    srvTooLarge:"tajomstvo prekračuje maximálnu povolenú veľkosť",
+    hTitle:"OnceVault — zdieľajte tajomstvo raz, potom zhorí.",
+    hIntro:"OnceVault vám umožní bezpečne zdieľať tajomstvo s presne jedným príjemcom — je zašifrované vo vašom prehliadači, otvoriť ho môže len jeden príjemca a odkaz sa sám zničí v okamihu prečítania.",
+    hQuote:"A ak sa k odkazu dostal niekto iný, dozviete sa to: správa už bude preč!",
+    hHow:"Pod kapotou",
+    hCrypto:"Vaše tajomstvo sa zašifruje <strong>vo vašom prehliadači</strong> pomocou AES-256-GCM skôr, než čokoľvek opustí váš počítač. Server ukladá iba šifrovaný text pod náhodným identifikátorom s expiráciou podľa vášho výberu (1 hodina až 7 dní). Dešifrovací kľúč cestuje <strong>iba</strong> vo <code>#fragment</code> časti odkazu, ktorú prehliadače nikdy neposielajú žiadnemu serveru — OnceVault by vaše tajomstvo neprečítal, ani keby chcel. Prvý príjemca, ktorý odkaz otvorí, tajomstvo získa; šifrovaný text sa v tom istom okamihu vymaže. Vypršané tajomstvá sa mažú neprečítané.",
+    hDur:"<strong>Doby platnosti:</strong> 1 hodina, 4 hodiny, 8 hodín, 1 deň, 2 dni, 5 dní alebo 7 dní. Čo sa včas nevyzdvihne, vymaže sa neprečítané.",
+    hOnce:"<strong>Jedno prečítanie:</strong> prvé otvorenie odkazu atomicky načíta a vymaže šifrovaný text. Ktokoľvek otvorí ten istý odkaz neskôr — vrátane vás — uvidí chybu, nikdy tajomstvo.",
+    legendY:"Žltá — váš odkaz na zdieľanie, pripravený na skopírovanie a odoslanie.",
+    legendG:"Zelená — tajomstvo dešifrované pre vás, zobrazené presne raz.",
+    legendR:"Červená — chyba: spálené, vypršané alebo neplatný kľúč.",
+    hHttps:"<strong>Vyžaduje sa HTTPS:</strong> Web Crypto API funguje len v zabezpečenom kontexte, OnceVault preto musí bežať cez HTTPS (alebo localhost na testovanie).",
+    hFree:"OnceVault je slobodný softvér",
+    hLicRest:", vydaný pod licenciou MIT. Copyright © 2026 Günther Mair. Vytvorené výhradne pomocou LLM nástrojov (modely Anthropic Claude a MiniMax)."},
+  sl:{name:"Slovenščina",secret:"Skrivnost",encrypt:"Šifriraj",lang:"Jezik",
+    theme:"Tema: sistem → temna → svetla",help:"O OnceVaultu",
+    eyeShow:"Pokaži skrivnost",eyeHide:"Skrij skrivnost",durAria:"Poteče čez",
+    copy:"Kopiraj",close:"Zapri",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"šifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
+    errNoCryptoDec:"dešifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
+    errNetwork:"omrežna napaka — strežnik ni dosegljiv",
+    errDecrypt:"dešifriranje ni uspelo — napačen ali poškodovan ključ",
+    errHttp:"nepričakovan odgovor strežnika (HTTP {0})",
+    srvBurned:"skrivnost je potekla ali je bila že sežgana",
+    srvExpired:"skrivnost je potekla, preden je bila prevzeta",
+    srvRate:"presežena omejitev zahtev, poskusite pozneje",
+    srvBlocked:"dostop blokiran",
+    srvBackend:"nepričakovana napaka strežnika",
+    srvTooLarge:"skrivnost presega največjo dovoljeno velikost",
+    hTitle:"OnceVault — delite skrivnost enkrat, nato zgori.",
+    hIntro:"OnceVault vam omogoča varno deljenje skrivnosti z natanko enim prejemnikom — šifrira se v vašem brskalniku, odpre jo lahko le en prejemnik, povezava pa se samouniči v trenutku, ko je prebrana.",
+    hQuote:"In če je povezavo dobil kdo drug, boste to vedeli: sporočila že ne bo več!",
+    hHow:"Pod pokrovom",
+    hCrypto:"Vaša skrivnost se šifrira <strong>v vašem brskalniku</strong> z AES-256-GCM, preden karkoli zapusti vaš računalnik. Strežnik hrani le šifrirano besedilo pod naključnim identifikatorjem z rokom po vaši izbiri (od 1 ure do 7 dni). Ključ za dešifriranje potuje <strong>samo</strong> v <code>#fragment</code> delu povezave, ki ga brskalniki nikoli ne pošljejo nobenemu strežniku — OnceVault vaše skrivnosti ne bi mogel prebrati, tudi če bi hotel. Prvi prejemnik, ki odpre povezavo, dobi skrivnost; šifrirano besedilo se izbriše v istem trenutku. Potekle skrivnosti se izbrišejo neprebrane.",
+    hDur:"<strong>Trajanja:</strong> 1 ura, 4 ure, 8 ur, 1 dan, 2 dni, 5 dni ali 7 dni. Kar ni prevzeto pravočasno, se izbriše neprebrano.",
+    hOnce:"<strong>Enkratno branje:</strong> prvo odprtje povezave atomsko prevzame in izbriše šifrirano besedilo. Kdorkoli pozneje odpre isto povezavo — tudi vi — vidi napako, nikoli skrivnosti.",
+    legendY:"Rumena — vaša povezava za deljenje, pripravljena za kopiranje in pošiljanje.",
+    legendG:"Zelena — skrivnost, dešifrirana za vas, prikazana natanko enkrat.",
+    legendR:"Rdeča — napaka: sežgano, poteklo ali neveljaven ključ.",
+    hHttps:"<strong>Zahtevan je HTTPS:</strong> Web Crypto API deluje le v varnem kontekstu, zato mora biti OnceVault na voljo prek HTTPS (ali localhost za testiranje).",
+    hFree:"OnceVault je prosta programska oprema",
+    hLicRest:", izdana pod licenco MIT. Copyright © 2026 Günther Mair. V celoti izdelano z orodji LLM (modeli Anthropic Claude in MiniMax)."},
+  sv:{name:"Svenska",secret:"Hemlighet",encrypt:"Kryptera",lang:"Språk",
+    theme:"Tema: system → mörkt → ljust",help:"Om OnceVault",
+    eyeShow:"Visa hemlighet",eyeHide:"Dölj hemlighet",durAria:"Upphör efter",
+    copy:"Kopiera",close:"Stäng",
+    dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
+    errNoCryptoEnc:"kryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
+    errNoCryptoDec:"dekryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
+    errNetwork:"nätverksfel — servern kunde inte nås",
+    errDecrypt:"dekryptering misslyckades — fel eller skadad nyckel",
+    errHttp:"oväntat serversvar (HTTP {0})",
+    srvBurned:"hemligheten har upphört eller redan bränts",
+    srvExpired:"hemligheten upphörde innan den hämtades",
+    srvRate:"gränsen för förfrågningar överskriden, försök igen senare",
+    srvBlocked:"åtkomst blockerad",
+    srvBackend:"oväntat serverfel",
+    srvTooLarge:"hemligheten överskrider den största tillåtna storleken",
+    hTitle:"OnceVault — dela en hemlighet en gång, sedan brinner den.",
+    hIntro:"Med OnceVault delar du säkert en hemlighet med exakt en mottagare — den krypteras i din webbläsare, bara en mottagare kan öppna den, och länken självförstörs i det ögonblick den läses.",
+    hQuote:"Och om någon annan fått tag i länken kommer du att veta det: meddelandet är då redan borta!",
+    hHow:"Under huven",
+    hCrypto:"Din hemlighet krypteras <strong>i din webbläsare</strong> med AES-256-GCM innan något lämnar din maskin. Servern lagrar bara den krypterade texten under ett slumpmässigt ID med en giltighetstid du väljer (1 timme till 7 dagar). Dekrypteringsnyckeln färdas <strong>endast</strong> i länkens <code>#fragment</code>, som webbläsare aldrig skickar till någon server — OnceVault skulle inte kunna läsa din hemlighet ens om det ville. Den första mottagaren som öppnar länken får hemligheten; den krypterade texten raderas i samma ögonblick. Utgångna hemligheter raderas olästa.",
+    hDur:"<strong>Giltighetstider:</strong> 1 timme, 4 timmar, 8 timmar, 1 dag, 2 dagar, 5 dagar eller 7 dagar. Det som inte hämtas i tid raderas oläst.",
+    hOnce:"<strong>Engångsläsning:</strong> första öppningen av länken hämtar och raderar den krypterade texten atomärt. Den som öppnar samma länk efteråt — även du — ser ett fel, aldrig hemligheten.",
+    legendY:"Gul — din delningslänk, redo att kopiera och skicka.",
+    legendG:"Grön — en hemlighet dekrypterad åt dig, visad exakt en gång.",
+    legendR:"Röd — ett fel: bränd, utgången eller ogiltig nyckel.",
+    hHttps:"<strong>HTTPS krävs:</strong> Web Crypto API fungerar bara i en säker kontext, så OnceVault måste serveras via HTTPS (eller localhost för test).",
+    hFree:"OnceVault är fri programvara",
+    hLicRest:", utgiven under MIT-licensen. Copyright © 2026 Günther Mair. Helt byggd med LLM-verktyg (Anthropic Claude- och MiniMax-modeller)."},
+  zh:{name:"中文",secret:"秘密",encrypt:"加密",lang:"语言",
+    theme:"主题：系统 → 深色 → 浅色",help:"关于 OnceVault",
+    eyeShow:"显示秘密",eyeHide:"隐藏秘密",durAria:"有效期",
+    copy:"复制",close:"关闭",
+    dur:["1小时","4小时","8小时","1天","2天","5天","7天"],
+    errNoCryptoEnc:"无法加密 — OnceVault 需要 HTTPS（安全上下文）",
+    errNoCryptoDec:"无法解密 — OnceVault 需要 HTTPS（安全上下文）",
+    errNetwork:"网络错误 — 无法连接服务器",
+    errDecrypt:"解密失败 — 密钥错误或已损坏",
+    errHttp:"服务器返回异常响应（HTTP {0}）",
+    srvBurned:"秘密已过期或已被销毁",
+    srvExpired:"秘密在被取回之前已过期",
+    srvRate:"请求次数超限，请稍后再试",
+    srvBlocked:"访问被拒绝",
+    srvBackend:"服务器发生意外错误",
+    srvTooLarge:"秘密超过允许的最大大小",
+    hTitle:"OnceVault — 分享一次秘密，随后焚毁。",
+    hIntro:"OnceVault 让您安全地与唯一一位接收者分享秘密 — 秘密在您的浏览器中加密，只有一位接收者能够打开，链接在被读取的那一刻即自毁。",
+    hQuote:"如果链接落入他人之手，您也会知道：因为消息已经不在了！",
+    hHow:"工作原理",
+    hCrypto:"您的秘密在<strong>您的浏览器中</strong>使用 AES-256-GCM 加密，之后才会有任何数据离开您的设备。服务器仅在随机 ID 下存储密文，并附带您选择的有效期（1 小时至 7 天）。解密密钥<strong>仅</strong>存在于链接的 <code>#fragment</code> 部分，浏览器绝不会将其发送给任何服务器 — 即使 OnceVault 想读取您的秘密也无能为力。第一位打开链接的接收者获得秘密；密文在同一时刻被删除。过期的秘密将在未被读取的情况下删除。",
+    hDur:"<strong>有效期：</strong>1 小时、4 小时、8 小时、1 天、2 天、5 天或 7 天。未及时取回的内容将在未读状态下删除。",
+    hOnce:"<strong>阅后即焚：</strong>首次打开链接会以原子方式取回并删除密文。之后任何人再打开同一链接 — 包括您自己 — 只会看到错误，绝不会看到秘密。",
+    legendY:"黄色 — 您的分享链接，可复制并发送。",
+    legendG:"绿色 — 为您解密的秘密，仅显示一次。",
+    legendR:"红色 — 错误：已销毁、已过期或密钥无效。",
+    hHttps:"<strong>需要 HTTPS：</strong>Web Crypto API 仅在安全上下文中可用，因此 OnceVault 必须通过 HTTPS 提供（测试时可用 localhost）。",
+    hFree:"OnceVault 是自由软件",
+    hLicRest:"，以 MIT 许可证发布。Copyright © 2026 Günther Mair。完全使用 LLM 工具构建（Anthropic Claude 与 MiniMax 模型）。"}
+  };
+
+  /* Exact contract error strings (docs/PLAN_STEP_0.md §0.2) → i18n keys, so
+     server responses can be localized without the server knowing languages. */
+  var SRV_KEYS={
+    "secret expired or was already burned":"srvBurned",
+    "secret expired before it was retrieved":"srvExpired",
+    "rate limit exceeded, try again later":"srvRate",
+    "access blocked":"srvBlocked",
+    "unexpected backend failure":"srvBackend",
+    "secret exceeds maximum allowed size":"srvTooLarge"
+  };
+
+  /* stored choice wins; otherwise first browser language with a table; else en */
+  var lang=null;
+  try{
+    var storedLang=localStorage.getItem('oncevault-lang');
+    if(storedLang&&I18N[storedLang]) lang=storedLang;
+  }catch(e){}
+  if(!lang){
+    var cands=navigator.languages||[navigator.language||''];
+    for(var ci=0;ci<cands.length&&!lang;ci++){
+      var primaryTag=String(cands[ci]).toLowerCase().split('-')[0];
+      if(I18N[primaryTag]) lang=primaryTag;
+    }
+    if(!lang) lang='en';
+  }
+  function tr(k){
+    var t=I18N[lang];
+    return t&&t[k]!==undefined?t[k]:I18N.en[k];
+  }
+  function trSrv(msg){ var k=SRV_KEYS[msg]; return k?tr(k):msg; }
+  function refreshEyeTitle(){
+    eyeBtn.title=eyeBtn.classList.contains('revealed')?tr('eyeHide'):tr('eyeShow');
+    eyeBtn.setAttribute('aria-label',eyeBtn.title);
+  }
+  function applyLang(){
+    document.documentElement.lang=lang;
+    langSel.value=lang;
+    langBtn.title=tr('lang');
+    langSel.setAttribute('aria-label',tr('lang'));
+    input.placeholder=tr('secret');
+    input.setAttribute('aria-label',tr('secret'));
+    encBtn.textContent=tr('encrypt');
+    themeBtn.title=tr('theme');
+    themeBtn.setAttribute('aria-label',tr('theme'));
+    helpBtn.title=tr('help');
+    helpBtn.setAttribute('aria-label',tr('help'));
+    refreshEyeTitle();
+    durationSel.setAttribute('aria-label',tr('durAria'));
+    var dur=tr('dur');
+    for(var i=0;i<durationSel.options.length;i++) durationSel.options[i].textContent=dur[i];
+    copyBtn.title=tr('copy'); copyBtn.setAttribute('aria-label',tr('copy'));
+    closeBtn.title=tr('close'); closeBtn.setAttribute('aria-label',tr('close'));
+    dlgClose.title=tr('close'); dlgClose.setAttribute('aria-label',tr('close'));
+    var n=document.querySelectorAll('[data-i18n]');
+    for(i=0;i<n.length;i++) n[i].textContent=tr(n[i].getAttribute('data-i18n'));
+    n=document.querySelectorAll('[data-i18n-html]');
+    for(i=0;i<n.length;i++) n[i].innerHTML=tr(n[i].getAttribute('data-i18n-html'));
+  }
+  langSel.addEventListener('change',function(){
+    lang=langSel.value;
+    try{ localStorage.setItem('oncevault-lang',lang); }catch(e){}
+    applyLang();
+    input.focus();
+  });
+  applyLang();
+
   /* ---- output panel ---- */
   function showOutput(state,text){
     out.className='out out-'+state;   /* encrypt | decrypt | error */
@@ -414,7 +1235,7 @@ dialog li{margin-bottom:4px}
     var reveal=!input.classList.contains('revealed');
     input.classList.toggle('revealed',reveal);
     eyeBtn.classList.toggle('revealed',reveal);
-    eyeBtn.title=reveal?'Hide secret':'Show secret';
+    refreshEyeTitle();
     renderMask();
     autosize();                      /* mono vs page font wrap at different points */
     input.focus();
@@ -470,7 +1291,7 @@ dialog li{margin-bottom:4px}
   function encrypt(){
     if(busy) return;
     if(!window.crypto||!crypto.subtle){
-      showOutput('error','encryption unavailable — OnceVault requires HTTPS (secure context)');
+      showOutput('error',tr('errNoCryptoEnc'));
       return;
     }
     busy=true;
@@ -501,12 +1322,12 @@ dialog li{margin-bottom:4px}
           if(res.status===201&&data.guid){
             showOutput('encrypt',location.origin+'/?guid='+data.guid+'#'+bytesToB64Url(rawKey));
           }else{
-            showOutput('error',data.error||('unexpected server response (HTTP '+res.status+')'));
+            showOutput('error',data.error?trSrv(data.error):tr('errHttp').replace('{0}',res.status));
           }
         });
       })
       .catch(function(){
-        showOutput('error','network error — could not reach the server');
+        showOutput('error',tr('errNetwork'));
       })
       .then(function(){ busy=false; });
   }
@@ -521,7 +1342,7 @@ dialog li{margin-bottom:4px}
     if(!guid||!UUID_RE.test(guid)) return;
     if(!KEY_RE.test(frag)) return;
     if(!window.crypto||!crypto.subtle){
-      showOutput('error','decryption unavailable — OnceVault requires HTTPS (secure context)');
+      showOutput('error',tr('errNoCryptoDec'));
       resetUrl();
       return;
     }
@@ -537,16 +1358,16 @@ dialog li{margin-bottom:4px}
                 showOutput('decrypt',new TextDecoder().decode(pt));
               })
               .catch(function(){
-                showOutput('error','decryption failed — wrong or corrupted key');
+                showOutput('error',tr('errDecrypt'));
               });
           });
         }
         return res.json().catch(function(){ return {}; }).then(function(data){
-          showOutput('error',data.error||('unexpected server response (HTTP '+res.status+')'));
+          showOutput('error',data.error?trSrv(data.error):tr('errHttp').replace('{0}',res.status));
         });
       })
       .catch(function(){
-        showOutput('error','network error — could not reach the server');
+        showOutput('error',tr('errNetwork'));
       })
       .then(resetUrl); /* strip ?guid and #fragment from the address bar */
   }

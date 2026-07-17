@@ -83,3 +83,9 @@ requirements:
   - the eye icon still toggles masked (default) ↔ revealed content
   - the pill's corner radius stays fixed at the single-line value while the field grows
     (no ballooning fully-rounded corners)
+- the app is internationalized: English (default and fallback), all other official EU
+  languages, and Mandarin Chinese — 25 languages total:
+  - simple per-language string storages in JavaScript, UTF-8 encoded
+  - the app starts in the browser's default language (first match wins, else English)
+  - the language is selectable via the common "world-grid" (globe) icon, displayed as
+    the FIRST of the (then three) icons in the top-right corner of the window

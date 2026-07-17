@@ -13,7 +13,7 @@ minimalism.
 - Inside the pill, right side: eye toggle button (SVG), then a rounded native `<select>` duration dropdown fitted into the pill: options 1h,4h,8h,1d,2d,5d,7d → values 1,4,8,24,48,120,168, default 1d (24). No label.
 - Below: button `Encrypt [AES-256-GCM]` styled like the "Google Search" button.
 - Output panel below (hidden by default): width matches the input row; `min-height` = 2 text rows; grows vertically with content (pre-wrap, break-all for links); top-right inside: copy icon + close icon.
-- Top-right corner of the window: theme cycler icon (system→dark→light) and help icon.
+- Top-right corner of the window, in this order: language picker (world-grid/globe icon — an invisible native `<select>` stretched over the icon so one tap opens the browser's own option list, endonym labels), theme cycler icon (system→dark→light), and help icon.
 - Help icon opens a native `<dialog>`: product blurb from contract 0.1 + duration options, read-once semantics, color legend, note that HTTPS (secure context) is required for Web Crypto.
 
 ## Behavior
@@ -28,7 +28,8 @@ minimalism.
 - Decrypt-on-load: if `location.search` has `guid` matching the UUIDv4 regex AND `location.hash` holds a plausible key (43–44 base64/base64url chars): `GET /api/secrets/{guid}` (GUID ONLY — the fragment must never appear in any request URL/body/header), import raw key (decode base64url; fall back to standard base64), subtle.decrypt → **green** state; any failure (HTTP error → its `error` string; decrypt exception → "decryption failed — wrong or corrupted key") → **red** state. Then `history.replaceState` to strip `?guid` and the fragment from the address bar.
 - Output states as CSS classes: `.out-encrypt` yellow bg/dark-yellow text, `.out-decrypt` green/dark-green, `.out-error` red/dark-red — each with a dark-theme variant.
 - Copy icon: `navigator.clipboard.writeText(outputText)` with brief visual confirmation. Close icon: clear+hide output, clear input, reset URL (replaceState).
-- Theme cycler: cycles `system → dark → light`; sets `data-theme` on `<html>`; CSS custom properties with `prefers-color-scheme` as the system default; persisted in `localStorage("oncevault-theme")` — the ONLY storage the page uses.
+- Theme cycler: cycles `system → dark → light`; sets `data-theme` on `<html>`; CSS custom properties with `prefers-color-scheme` as the system default; persisted in `localStorage("oncevault-theme")`.
+- i18n (amendment 2026-07-18): 25 languages — English (default AND fallback for any missing key), the 23 other official EU languages (bg cs da de el es et fi fr ga hr hu it lt lv mt nl pl pt ro sk sl sv), and Mandarin (zh). One plain per-language string object in `I18N` (UTF-8); startup language = persisted `localStorage("oncevault-lang")` if valid, else the first `navigator.languages` primary subtag with a table, else `en`. All UI strings (placeholder, buttons, titles/aria-labels, duration labels, client error messages, the entire help dialog) come from the table; static dialog copy is tagged `data-i18n`/`data-i18n-html` (the latter for own static strings with `<strong>`/`<code>` markup only). The exact contract §0.2 server error strings are mapped client-side to localized equivalents (`SRV_KEYS`); unknown server strings display verbatim. Selecting a language persists it, re-applies everything, sets `<html lang>`, and returns focus to the input. localStorage keys `oncevault-theme` + `oncevault-lang` are the ONLY storage the page uses.
 - Focus management: after completing any action (eye toggle, duration dropdown change, theme cycle, close icon, help dialog close), focus MUST return to the secret input field so the user can keep typing without re-clicking.
 
 ## Constraints

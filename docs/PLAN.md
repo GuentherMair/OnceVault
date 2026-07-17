@@ -51,7 +51,9 @@ extension · `max_secret_bytes` default 16384 · trusted-proxy-aware client IP �
 Redis pure native TTL (410 never occurs on Redis) · purge throttled ≤1/min async ·
 cleanup CLI subcommand with per-DB vacuum · plain HTTP behind TLS-terminating reverse
 proxy · multi-line masked textarea input (ENTER encrypts, ALT+ENTER newline, auto-grow
-to 15 lines then scroll — see PLAN_STEP_4) · sqlite-only unit tests · semantic status codes
+to 15 lines then scroll — see PLAN_STEP_4) · i18n: 25 languages (en default/fallback,
+all other official EU languages, Mandarin), browser-language start, globe-icon picker,
+localStorage persistence · sqlite-only unit tests · semantic status codes
 (POST 201/400/403/429 · GET 200/410/404/500) · sparse invariant-focused comments.
 
 ## Build steps and waves

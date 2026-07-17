@@ -199,4 +199,4 @@ every rules value is `"0"`, `"-"`, or a positive integer string; `default` ≥ 0
   `github.com/jackc/pgx/v5` (via `database/sql` stdlib driver), `gopkg.in/yaml.v3`.
 - Logging: `log/slog` to stderr. Purge/cleanup failures: `slog.Warn`/`slog.Error` only — never in an API response.
 - Comments: sparse, invariant-focused; doc-comments on exported identifiers.
-- Frontend: zero external requests of any kind; inline SVG icons; no cookies; localStorage only for the theme choice.
+- Frontend: zero external requests of any kind; inline SVG icons; no cookies; localStorage only for the theme choice and (amendment 2026-07-18) the language choice.
