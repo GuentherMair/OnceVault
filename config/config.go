@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Günther Mair
+
 // Package config loads and validates the OnceVault configuration file
 // per the frozen schema in docs/PLAN_STEP_0.md §0.5.
 package config

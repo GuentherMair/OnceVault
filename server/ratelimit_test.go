@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Günther Mair
+
 //go:build driver_sqlite || driver_all
 
 package server

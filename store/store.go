@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Günther Mair
+
 // Package store provides the storage backends for OnceVault secrets.
 // This file is the frozen contract (docs/PLAN_STEP_0.md §0.3) — do not modify.
 package store

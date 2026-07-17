@@ -43,3 +43,7 @@ simply report the secret as gone (404).
 Single Go binary, one self-contained HTML page, your choice of sqlite, redis, MySQL,
 or PostgreSQL. See [INSTALL.md](INSTALL.md) for build, configuration, database setup,
 systemd, cron cleanup, and reverse-proxy examples.
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Günther Mair.

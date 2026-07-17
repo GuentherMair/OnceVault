@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Günther Mair
+
 // Package server implements the OnceVault HTTP API per the frozen contract
 // in docs/PLAN_STEP_0.md §0.2: four routes, exact error strings, no-store
 // caching, trusted-proxy-aware client IPs, and CIDR blocking on all routes.
