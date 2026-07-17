@@ -65,3 +65,12 @@ The most important notes and caveats (to be also re-verified after each implemen
 
 Divide the build into steps delegatable to sub-agents. Store each step in a distinct memory file and create a central memory file for firing up parallel implementation.
 Stop before doing so, as I want to run the plan through a grilling Q&A session first.
+
+---
+
+## Additions (post-initial-request)
+
+The following were added after the original request and are to be treated as binding
+requirements:
+
+- the focus should always go back to the input field, whenever any action is completed

@@ -18,7 +18,7 @@ minimalism.
 
 ## Behavior
 
-- Autofill/store prevention: `autocomplete="off"` on form + `autocomplete="new-password"` on input, randomized `name` attr (set from JS at load), `data-lpignore="true"`, `data-1p-ignore`, `data-bwignore`, `spellcheck="false"`; native form submit prevented.
+- Autofill/store prevention: `autocomplete="off"` on the form, `autocomplete="one-time-code"` on the input (the standard hint for a single-use, do-not-save value — explicitly NOT `new-password`/`current-password` which would make Safari offer to save the secret as a password, and more reliable than `off` on `type="password"` since WebKit historically ignores `off` on password fields). Also: `autocapitalize="off"` + `autocorrect="off"` (iOS keyboard autofill/correction), randomized `name` attr (set from JS at load so it can't match a saved-password entry by name pattern), `data-lpignore="true"`, `data-1p-ignore`, `data-bwignore`, `spellcheck="false"`; native form submit prevented. The intent is "burn-after-reading": the secret MUST NEVER be stored by any browser/extension password manager.
 - Eye toggle: swap input `type` password↔text + swap SVG (eye/eye-off).
 - ENTER in input triggers encrypt **only if** `input.value` non-empty; button click likewise no-ops on empty.
 - Encrypt flow (contract 0.6): generateKey AES-GCM-256 → 12-byte IV via getRandomValues → subtle.encrypt of `TextEncoder`-encoded value → `POST /api/secrets` `{"secret": b64std(ct), "iv": b64std(iv), "duration": selectedHours}` → 201: show `${location.origin}/?guid=${guid}#${b64url_nopad(rawKey)}` in **yellow** state; non-2xx: show server `error` string in **red** state. Clear the input after successful encryption.
@@ -26,6 +26,7 @@ minimalism.
 - Output states as CSS classes: `.out-encrypt` yellow bg/dark-yellow text, `.out-decrypt` green/dark-green, `.out-error` red/dark-red — each with a dark-theme variant.
 - Copy icon: `navigator.clipboard.writeText(outputText)` with brief visual confirmation. Close icon: clear+hide output, clear input, reset URL (replaceState).
 - Theme cycler: cycles `system → dark → light`; sets `data-theme` on `<html>`; CSS custom properties with `prefers-color-scheme` as the system default; persisted in `localStorage("oncevault-theme")` — the ONLY storage the page uses.
+- Focus management: after completing any action (eye toggle, duration dropdown change, theme cycle, close icon, help dialog close), focus MUST return to the secret input field so the user can keep typing without re-clicking.
 
 ## Constraints
 Vanilla JS (one inline `<script>`), one inline `<style>`; no framework, no build step, no

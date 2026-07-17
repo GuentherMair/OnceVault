@@ -90,6 +90,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 }
 .iconbtn:hover{background:var(--hover-bg)}
 .iconbtn svg{width:22px;height:22px;display:block}
+/* eye toggle: same eye shape; .revealed on the button adds a strike-through */
+.iconbtn #iEyeSlash{display:none}
+.iconbtn.revealed #iEyeSlash{display:inline}
 /* theme button shows the icon of the CURRENT mode */
 .iconbtn .t-ico{display:none}
 html[data-theme="system"] .i-system{display:block}
@@ -118,7 +121,7 @@ form{
 .pill{
   display:flex;align-items:center;gap:8px;
   width:100%;max-width:700px;height:48px;
-  padding:0 16px; /* horizontal breathing room */
+  padding:0 10px 0 16px; /* left keeps the input's 16px breathing room; right matches the select's top/bottom */
   border:1px solid var(--border);border-radius:9999px;
   background:var(--pill-bg);
   transition:box-shadow .12s,border-color .12s;
@@ -132,10 +135,16 @@ form{
 .pill .iconbtn{padding:6px}
 .pill .iconbtn svg{width:20px;height:20px}
 .pill select{
+  appearance:none;-webkit-appearance:none;
   border:1px solid var(--border);border-radius:9999px;
-  background:var(--btn-bg);color:inherit;
-  font-size:13px;padding:4px 6px;
+  background-color:var(--btn-bg);color:inherit;
+  font-size:14px;padding:6px 22px 6px 10px;
   cursor:pointer;
+  /* custom chevron (appearance:none removes the native one) */
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 9px center;
+  background-size:10px 10px;
 }
 @media (max-width:640px){
   /* On narrow screens the 92% width already gives ample space; the explicit
@@ -220,11 +229,11 @@ dialog li{margin-bottom:4px}
   <form id="form" autocomplete="off">
     <div class="pill">
       <input id="secret" type="password" placeholder="Secret" aria-label="Secret"
-             autocomplete="new-password" spellcheck="false"
+             autocomplete="one-time-code" autocapitalize="off" autocorrect="off"
+             spellcheck="false"
              data-lpignore="true" data-1p-ignore data-bwignore>
       <button id="eyeBtn" class="iconbtn" type="button" title="Show secret" aria-label="Toggle secret visibility">
-        <svg id="iEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-        <svg id="iEyeOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <svg id="iEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line id="iEyeSlash" x1="2" y1="2" x2="22" y2="22"/></svg>
       </button>
       <select id="duration" aria-label="Expires after">
         <option value="1">1h</option>
@@ -291,7 +300,7 @@ dialog li{margin-bottom:4px}
 (function(){
   var $ = function(id){ return document.getElementById(id); };
   var form=$('form'), input=$('secret'), durationSel=$('duration'),
-      eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeOff=$('iEyeOff'),
+      eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeSlash=$('iEyeSlash'),
       out=$('out'), outText=$('outText'),
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
       themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose');
@@ -311,6 +320,7 @@ dialog li{margin-bottom:4px}
     theme=THEMES[(THEMES.indexOf(theme)+1)%THEMES.length];
     document.documentElement.dataset.theme=theme;
     try{ localStorage.setItem('oncevault-theme',theme); }catch(e){}
+    input.focus();
   });
 
   /* ---- autofill prevention: randomized field name, native submit prevented below ---- */
@@ -364,13 +374,18 @@ dialog li{margin-bottom:4px}
   eyeBtn.addEventListener('click',function(){
     var reveal=input.type==='password';
     input.type=reveal?'text':'password';
-    iEye.hidden=reveal; iEyeOff.hidden=!reveal;
+    eyeBtn.classList.toggle('revealed',reveal);
     eyeBtn.title=reveal?'Hide secret':'Show secret';
+    input.focus();
   });
+
+  /* ---- duration dropdown ---- */
+  durationSel.addEventListener('change',function(){ input.focus(); });
 
   /* ---- help dialog ---- */
   helpBtn.addEventListener('click',function(){ helpDlg.showModal(); });
   dlgClose.addEventListener('click',function(){ helpDlg.close(); });
+  helpDlg.addEventListener('close',function(){ input.focus(); });
 
   /* ---- encrypt flow ----
      SECURITY INVARIANT: the plaintext and the key NEVER appear in any request.
