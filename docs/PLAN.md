@@ -39,7 +39,7 @@ OnceVault/
 ├── web/favicon.ico           # vault-wheel icon (PNG-in-ICO 16/32/48), generated, go:embed
 ├── config.example.yaml       # commented, incl. max_secret_bytes pros/cons
 ├── config.example.json
-├── README.md / INSTALL.md / CLAUDE.md
+├── README.md / INSTALL.md / CHANGELOG.md / CLAUDE.md
 └── docs/                     # this documentation set
 ```
 
