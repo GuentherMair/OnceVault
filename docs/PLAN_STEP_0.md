@@ -8,7 +8,7 @@ interface and stubs are pre-committed so wave-1 agents work on disjoint files.
 
 Used verbatim (adapted for medium) by the frontend help dialog AND the README intro:
 
-> **OnceVault** — share a secret once, then it burns.
+> **OnceVault** — share a secret once, then discard it.
 > Your secret is encrypted **in your browser** with AES-256-GCM before anything leaves
 > your machine. The server only ever stores the ciphertext under a random ID with an
 > expiry you pick (1 hour to 7 days). The decryption key travels **only** in the
