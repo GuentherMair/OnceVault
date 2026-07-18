@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -38,8 +39,9 @@ const (
 	msgBlocked     = "access blocked"
 	msgRateLimited = "rate limit exceeded, try again later"
 	msgBackend     = "unexpected backend failure"
-	msgBurned      = "secret expired or was already burned"
-	msgExpired     = "secret expired before it was retrieved"
+	// msgTaken wording amended 2026-07-18 (contract §0.2 amendment note).
+	msgTaken   = "secret expired or was already retrieved"
+	msgExpired = "secret expired before it was retrieved"
 )
 
 const (
@@ -64,6 +66,9 @@ type Server struct {
 	handler http.Handler
 	// lastPurge is the unix second of the last purge trigger (CAS-guarded).
 	lastPurge atomic.Int64
+	// purgeWG tracks in-flight opportunistic purges so shutdown can wait for
+	// them before the store is closed.
+	purgeWG sync.WaitGroup
 }
 
 // New builds the full middleware+mux chain. index is the frontend page bytes,
@@ -116,6 +121,8 @@ func (s *Server) recoverMiddleware(next http.Handler) http.Handler {
 			}
 		}()
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -195,8 +202,16 @@ func inNets(nets []netip.Prefix, a netip.Addr) bool {
 	return false
 }
 
+// indexCSP locks the page down to its own inline script/style and same-origin
+// fetch/favicon — the frontend loads nothing external by design (invariant 3),
+// so everything else can be denied outright.
+const indexCSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +
+	"img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", indexCSP)
+	w.Header().Set("X-Frame-Options", "DENY")
 	w.Write(s.index)
 }
 
@@ -222,6 +237,13 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
 	// Body cap per §0.2: ceil(max_secret_bytes*4/3) + 1024.
 	bodyCap := (int64(s.cfg.MaxSecretBytes)*4+2)/3 + 1024
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, bodyCap))
+	// A body over the cap can only mean an oversized secret — report it with
+	// the contract's size error, not as malformed JSON (amendment 2026-07-18).
+	var maxErr *http.MaxBytesError
+	if errors.As(err, &maxErr) {
+		writeError(w, http.StatusBadRequest, msgSecretSize)
+		return
+	}
 	var req createRequest
 	if err != nil || firstNonSpace(body) != '{' || json.Unmarshal(body, &req) != nil {
 		writeError(w, http.StatusBadRequest, msgInvalidJSON)
@@ -268,11 +290,20 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTake(w http.ResponseWriter, r *http.Request) {
+	// Amendment 2026-07-18: retrieval shares the POST rate-limit budget so the
+	// unmetered GET path cannot be used as a free DB-load amplifier.
+	ip := clientIP(r.Context())
+	limit, _ := s.cfg.LimitFor(ip)
+	if !s.limiter.Allow(ip, limit) {
+		writeError(w, http.StatusTooManyRequests, msgRateLimited)
+		return
+	}
+
 	guid := r.PathValue("guid")
 	if !guidRe.MatchString(guid) {
-		// Short-circuit: no DB hit, and the same 404 as a burned secret
+		// Short-circuit: no DB hit, and the same 404 as a retrieved secret
 		// so malformed guids reveal nothing about the format.
-		writeError(w, http.StatusNotFound, msgBurned)
+		writeError(w, http.StatusNotFound, msgTaken)
 		return
 	}
 	secret, iv, err := s.st.TakeOnce(r.Context(), guid)
@@ -285,7 +316,7 @@ func (s *Server) handleTake(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, store.ErrExpired):
 		writeError(w, http.StatusGone, msgExpired)
 	case errors.Is(err, store.ErrNotFound):
-		writeError(w, http.StatusNotFound, msgBurned)
+		writeError(w, http.StatusNotFound, msgTaken)
 	default:
 		slog.Error("secret take failed", "error", err)
 		writeError(w, http.StatusInternalServerError, msgBackend)
@@ -306,13 +337,22 @@ func (s *Server) maybePurge() {
 		return
 	}
 	st := s.st
+	s.purgeWG.Add(1)
 	go func() {
+		defer s.purgeWG.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), purgeTimeout)
 		defer cancel()
 		if _, err := st.PurgeExpired(ctx); err != nil {
 			slog.Warn("opportunistic purge failed", "error", err)
 		}
 	}()
+}
+
+// Wait blocks until any in-flight opportunistic purge has finished. Call it
+// after the HTTP server has shut down and before closing the store, so a
+// purge started by a late request never hits a closed store.
+func (s *Server) Wait() {
+	s.purgeWG.Wait()
 }
 
 // newGUID hand-rolls a UUIDv4 from crypto/rand with RFC 4122 version/variant bits.

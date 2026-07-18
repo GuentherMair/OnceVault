@@ -22,8 +22,9 @@ type window struct {
 }
 
 // Limiter enforces a fixed 1-minute window per resolved client IP.
-// It counts only POST /api/secrets; blocking ("-") and unlimited ("0")
-// rules are resolved by the caller via config.LimitFor.
+// It meters POST /api/secrets and GET /api/secrets/{guid} against one shared
+// budget (amendment 2026-07-18); blocking ("-") and unlimited ("0") rules are
+// resolved by the caller via config.LimitFor.
 type Limiter struct {
 	mu      sync.Mutex
 	windows map[netip.Addr]window
@@ -40,12 +41,28 @@ func NewLimiter() *Limiter {
 	}
 }
 
-// Allow records one POST attempt from ip and reports whether it is within
+// limiterKey buckets IPv6 clients by their /64: a single subscriber typically
+// controls an entire /64, so per-address windows would let one attacker mint
+// unlimited fresh limiter entries by rotating addresses. IPv4 keys stay
+// per-address. Rule matching (LimitFor) still sees the full address.
+func limiterKey(ip netip.Addr) netip.Addr {
+	if !ip.IsValid() || ip.Is4() {
+		return ip
+	}
+	p, err := ip.Prefix(64)
+	if err != nil {
+		return ip
+	}
+	return p.Addr()
+}
+
+// Allow records one metered request from ip and reports whether it is within
 // limit per minute. limit <= 0 means unlimited and records nothing.
 func (l *Limiter) Allow(ip netip.Addr, limit int) bool {
 	if limit <= 0 {
 		return true
 	}
+	ip = limiterKey(ip)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()

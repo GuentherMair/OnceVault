@@ -16,6 +16,12 @@ others — do NOT modify them; replace only the three stub files. go.mod/go.sum 
 - The "registry empty" wording in `Open()`'s error (`<none — rebuild with -tags driver_all or -tags driver_<name>>`) is part of the user-facing contract; document it in `INSTALL.md §7` and do not change the wording without updating both files together.
 - Tests under `store/sqlite_test.go`, `server/server_test.go`, and `server/ratelimit_test.go` carry the same `driver_sqlite || driver_all` tag so the test suite only runs when sqlite is built in. Run with `go test -tags driver_all ./...`.
 
+## mysql specifics
+- `TakeOnce` runs its transaction at READ COMMITTED (amendment 2026-07-18): under
+  the default REPEATABLE READ, `SELECT…FOR UPDATE` on an absent guid takes gap
+  locks, and concurrent probes of unknown guids plus inserts are a deadlock
+  recipe. Semantics of the single-row fetch+delete are unchanged.
+
 ## sqlite specifics
 - DSN = file path or `:memory:`; enable WAL + busy_timeout pragmas for file DBs.
 - `DELETE … RETURNING` requires modernc's bundled sqlite ≥3.35 — present.

@@ -144,6 +144,8 @@ func TestLoadErrors(t *testing.T) {
 	mustFail(t, "c.yaml", "db: {driver: sqlite, dsn: \"\"}\n", "db.dsn")
 	mustFail(t, "c.yaml", "db: {driver: sqlite}\n", "db.dsn")
 	mustFail(t, "c.yaml", "db: {driver: sqlite, dsn: x}\nmax_secret_bytes: -1\n", "max_secret_bytes")
+	mustFail(t, "c.yaml", "db: {driver: sqlite, dsn: x}\nmax_secret_bytes: 16777217\n", "max_secret_bytes must be <=")
+	mustFail(t, "c.yaml", "listen: \"no-port\"\ndb: {driver: sqlite, dsn: x}\n", "listen")
 	mustFail(t, "c.yaml", "db: {driver: sqlite, dsn: x}\nrate_limit: {default: -5}\n", "rate_limit.default")
 	mustFail(t, "c.yaml", "not: [valid: yaml\n", "parse YAML")
 	mustFail(t, "c.json", "{not json", "parse JSON")
@@ -161,6 +163,29 @@ func TestDefaultZeroRevertsTo6000(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "reverting to 6000/min") {
 		t.Errorf("expected warning log, got %q", buf.String())
+	}
+}
+
+// TestTrustedProxyMatchAllWarns: a /0 trusted proxy lets every client spoof
+// its IP via X-Forwarded-For — the load must succeed but warn loudly.
+func TestTrustedProxyMatchAllWarns(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(prev)
+
+	cfg := mustLoad(t, "c.yaml", "db: {driver: sqlite, dsn: x}\ntrusted_proxies: [\"0.0.0.0/0\"]\nrate_limit: {default: 60}\n")
+	if len(cfg.TrustedProxyNets) != 1 {
+		t.Fatalf("TrustedProxyNets = %v", cfg.TrustedProxyNets)
+	}
+	if !strings.Contains(buf.String(), "match-everything") {
+		t.Errorf("expected match-everything warning, got %q", buf.String())
+	}
+	// A narrow prefix stays silent.
+	buf.Reset()
+	mustLoad(t, "c.yaml", "db: {driver: sqlite, dsn: x}\ntrusted_proxies: [\"127.0.0.1\"]\nrate_limit: {default: 60}\n")
+	if strings.Contains(buf.String(), "match-everything") {
+		t.Errorf("unexpected warning for /32 proxy: %q", buf.String())
 	}
 }
 

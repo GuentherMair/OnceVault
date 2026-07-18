@@ -35,7 +35,7 @@ and key exist only in the sender's and recipient's browsers. A full database dum
 complete traffic logs would still not decrypt a single secret.
 
 One backend nuance: the **redis** backend uses native key TTL for expiry, so it cannot
-distinguish "expired unread" (410 on the SQL backends) from "already burned" — both
+distinguish "expired unread" (410 on the SQL backends) from "already retrieved" — both
 simply report the secret as gone (404).
 
 ## Interested?
@@ -55,6 +55,9 @@ from a human-written specification, through a staged multi-agent build plan, to 
 and iteration. The full original request and step plans are preserved in
 [docs/](docs/INITIAL_REQUEST.md) and then refined through [GRILLING](docs/GRILLING.md)
 and [FINETUNING](docs/FINETUNING.md).
+
+All non-English UI translations are machine-generated and have not been reviewed by
+native speakers — corrections are very welcome.
 
 ## License
 

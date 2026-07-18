@@ -118,9 +118,10 @@ func cleanup(cfg *config.Config, st store.Store) int {
 // serve runs the HTTP server until SIGINT/SIGTERM, then shuts down gracefully
 // and closes the store.
 func serve(cfg *config.Config, st store.Store) int {
+	srv := server.New(cfg, st, indexHTML, faviconICO)
 	httpSrv := &http.Server{
 		Addr:              cfg.Listen,
-		Handler:           server.New(cfg, st, indexHTML, faviconICO),
+		Handler:           srv,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       time.Minute,
 		WriteTimeout:      time.Minute,
@@ -148,6 +149,9 @@ func serve(cfg *config.Config, st store.Store) int {
 			code = 1
 		}
 	}
+	// An opportunistic purge may still be running; let it finish before the
+	// store goes away so clean shutdowns stay warning-free.
+	srv.Wait()
 	if err := st.Close(); err != nil {
 		slog.Warn("store close failed", "error", err)
 	}

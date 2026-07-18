@@ -72,6 +72,26 @@ func TestLimiterUnlimited(t *testing.T) {
 	}
 }
 
+// TestLimiterBucketsIPv6By64: distinct addresses inside one /64 share a
+// window (one subscriber cannot mint fresh entries by rotating addresses);
+// a different /64 gets its own budget.
+func TestLimiterBucketsIPv6By64(t *testing.T) {
+	l, _ := clockedLimiter()
+	if !l.Allow(netip.MustParseAddr("2001:db8:0:0::1"), 1) {
+		t.Fatal("first IPv6 request denied")
+	}
+	if l.Allow(netip.MustParseAddr("2001:db8:0:0:ffff::2"), 1) {
+		t.Fatal("second address in the same /64 got a fresh budget")
+	}
+	if !l.Allow(netip.MustParseAddr("2001:db8:0:1::1"), 1) {
+		t.Fatal("different /64 denied, want own budget")
+	}
+	// IPv4 stays per-address.
+	if !l.Allow(netip.MustParseAddr("192.0.2.1"), 1) || !l.Allow(netip.MustParseAddr("192.0.2.2"), 1) {
+		t.Fatal("distinct IPv4 addresses must not share a window")
+	}
+}
+
 func TestLimiterPrunesStaleWindows(t *testing.T) {
 	l, now := clockedLimiter()
 	l.pruneAt = 8
@@ -112,27 +132,36 @@ func TestRateLimitDefaultExceeded(t *testing.T) {
 	}
 }
 
-func TestRateLimitCountsOnlyPost(t *testing.T) {
-	cfg := loadCfg(t, map[string]any{"rate_limit": map[string]any{"default": 1}})
+// TestRateLimitMetersApiOnly: POST and API GET share one per-IP budget
+// (amendment 2026-07-18); the page and favicon routes are never metered.
+func TestRateLimitMetersApiOnly(t *testing.T) {
+	cfg := loadCfg(t, map[string]any{"rate_limit": map[string]any{"default": 2}})
 	srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 
-	// GETs never consume or hit the POST budget.
+	// Unmetered routes never consume budget.
 	for i := 0; i < 5; i++ {
 		if rr := do(t, srv, "GET", "/", "203.0.113.9:1", "", nil); rr.Code != http.StatusOK {
 			t.Fatalf("GET / = %d, want 200", rr.Code)
 		}
-		rr := do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "203.0.113.9:1", "", nil)
-		if rr.Code != http.StatusNotFound {
-			t.Fatalf("GET secret = %d, want 404", rr.Code)
+		if rr := do(t, srv, "GET", "/favicon.ico", "203.0.113.9:1", "", nil); rr.Code != http.StatusOK {
+			t.Fatalf("GET /favicon.ico = %d, want 200", rr.Code)
 		}
 	}
+	// Budget of 2: one POST + one API GET spend it...
 	rr := do(t, srv, "POST", "/api/secrets", "203.0.113.9:1", postBody(validSecret, validIV, 24), nil)
 	if rr.Code != http.StatusCreated {
-		t.Fatalf("first POST = %d, want 201", rr.Code)
+		t.Fatalf("POST = %d, want 201", rr.Code)
 	}
+	rr = do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "203.0.113.9:1", "", nil)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("API GET = %d, want 404", rr.Code)
+	}
+	// ...and both verbs are then rejected.
 	rr = do(t, srv, "POST", "/api/secrets", "203.0.113.9:1", postBody(validSecret, validIV, 24), nil)
 	wantError(t, rr, http.StatusTooManyRequests, msgRateLimited)
-	// GETs still work after the POST budget is spent.
+	rr = do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "203.0.113.9:1", "", nil)
+	wantError(t, rr, http.StatusTooManyRequests, msgRateLimited)
+	// The page stays reachable after the budget is spent.
 	if rr := do(t, srv, "GET", "/", "203.0.113.9:1", "", nil); rr.Code != http.StatusOK {
 		t.Fatalf("GET / after 429 = %d, want 200", rr.Code)
 	}

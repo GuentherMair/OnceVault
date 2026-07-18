@@ -5,7 +5,7 @@ Individual build steps: [PLAN_STEP_0](PLAN_STEP_0.md) … [PLAN_STEP_6](PLAN_STE
 
 ## What OnceVault is
 
-A zero-knowledge, single-use secret sharing service ("burn on read"). A user pastes a
+A zero-knowledge, single-use secret sharing service (read-once). A user pastes a
 secret into a minimal Google-style frontend; the secret is encrypted **entirely in the
 browser** with AES-256-GCM via the Web Crypto API. Only ciphertext + IV + duration reach
 the backend, stored under a random GUID with an expiry. The share link is
@@ -47,10 +47,12 @@ OnceVault/
 
 Go + stdlib HTTP · `/?guid={UUIDv4}#{base64url-key, unpadded}` · JSON/YAML config by
 extension · `max_secret_bytes` default 16384 · trusted-proxy-aware client IP ·
-`"-"` blocks all routes, numeric limits meter POST only, `default: 0` → warn + 6000/min ·
+`"-"` blocks all routes, numeric limits meter POST and retrieval GET against one
+shared budget (amendment 2026-07-18; IPv6 bucketed by /64), `default: 0` → warn + 6000/min ·
+security headers served by the Go binary (nosniff everywhere; CSP + frame-deny on the page) ·
 Redis pure native TTL (410 never occurs on Redis) · purge throttled ≤1/min async ·
 cleanup CLI subcommand with per-DB vacuum · plain HTTP behind TLS-terminating reverse
-proxy · multi-line masked textarea input (ENTER encrypts, ALT+ENTER newline, auto-grow
+proxy · multi-line masked textarea input (ENTER encrypts, ALT+ENTER or SHIFT+ENTER newline, auto-grow
 to 15 lines then scroll — see PLAN_STEP_4) · i18n: 25 languages (en default/fallback,
 all other official EU languages, Mandarin), browser-language start, globe-icon picker,
 localStorage persistence · sqlite-only unit tests · semantic status codes
@@ -76,4 +78,4 @@ reports to the user and waits for go-ahead.
 
 - Unit coverage: config parsing/fallbacks; CIDR limiter (0 / - / n / default / longest-prefix / trusted-proxy); POST validation matrix; GET outcome matrix (200/410/404/500); sqlite read-once atomicity (concurrent TakeOnce → exactly one winner); purge throttle.
 - E2E (wave 3): start server with sqlite config → POST WebCrypto-compatible ciphertext, GET once (200), GET again (404), expired fixture (410), unknown route (404), oversize body (400), rate-limit burst (429), `cleanup` run.
-- Manual browser checklist: encrypt → copy link → open in second window → green decrypt; second open → red burned error; eye toggle; ENTER-on-empty no-op; multi-line input (paste and ALT+ENTER grow the field, masked dots keep the line structure and align with the caret, 15-line cap scrolls, newlines survive encrypt→decrypt); theme cycle persistence; help dialog; copy/close; responsive shrink; devtools network tab shows no plaintext/key.
+- Manual browser checklist: encrypt → copy link → open in second window → green decrypt; second open → red already-retrieved error; eye toggle; ENTER-on-empty no-op; multi-line input (paste and ALT+ENTER grow the field, masked dots keep the line structure and align with the caret, 15-line cap scrolls, newlines survive encrypt→decrypt); theme cycle persistence; help dialog; copy/close; responsive shrink; devtools network tab shows no plaintext/key.

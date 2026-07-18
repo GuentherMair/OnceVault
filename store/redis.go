@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -32,17 +34,33 @@ type Redis struct {
 	client *redis.Client
 }
 
+var redisVersionRe = regexp.MustCompile(`redis_version:(\d+)\.(\d+)`)
+
 // NewRedis connects to the Redis at dsn (redis://[:password@]host:port/db) and
-// verifies the connection with a ping.
+// verifies the connection with a ping. TakeOnce relies on GETDEL (Redis >= 6.2),
+// so a server that reports an older version is rejected here rather than
+// failing on every retrieval; when INFO is unavailable (some managed
+// offerings restrict it) the check is skipped.
 func NewRedis(dsn string) (*Redis, error) {
 	opts, err := redis.ParseURL(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("redis: parse dsn: %w", err)
 	}
 	client := redis.NewClient(opts)
-	if err := client.Ping(context.Background()).Err(); err != nil {
+	ctx := context.Background()
+	if err := client.Ping(ctx).Err(); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("redis: ping: %w", err)
+	}
+	if info, err := client.Info(ctx, "server").Result(); err == nil {
+		if m := redisVersionRe.FindStringSubmatch(info); m != nil {
+			major, _ := strconv.Atoi(m[1])
+			minor, _ := strconv.Atoi(m[2])
+			if major < 6 || (major == 6 && minor < 2) {
+				client.Close()
+				return nil, fmt.Errorf("redis: server version %s.%s too old — retrieval uses GETDEL, which requires Redis >= 6.2", m[1], m[2])
+			}
+		}
 	}
 	return &Redis{client: client}, nil
 }

@@ -250,6 +250,16 @@ dialog li{margin-bottom:4px}
 .chip-g{background:var(--g-bg);border:1px solid var(--g-fg)}
 .chip-r{background:var(--r-bg);border:1px solid var(--r-fg)}
 </style>
+<script>
+/* stamp the stored theme before first paint so a stored choice that differs
+   from the OS scheme never flashes the wrong theme; the main script at the
+   end of <body> remains the single owner of all further theme handling */
+'use strict';
+try{
+  var earlyTheme=localStorage.getItem('oncevault-theme');
+  if(earlyTheme==='dark'||earlyTheme==='light') document.documentElement.dataset.theme=earlyTheme;
+}catch(e){}
+</script>
 </head>
 <body>
 
@@ -365,7 +375,7 @@ dialog li{margin-bottom:4px}
 (function(){
   var $ = function(id){ return document.getElementById(id); };
   var form=$('form'), input=$('secret'), mask=$('mask'), durationSel=$('duration'),
-      eyeBtn=$('eyeBtn'), iEye=$('iEye'), iEyeSlash=$('iEyeSlash'),
+      eyeBtn=$('eyeBtn'),
       out=$('out'), outText=$('outText'), encBtn=$('encBtn'),
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
       themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose'),
@@ -389,7 +399,9 @@ dialog li{margin-bottom:4px}
     input.focus();
   });
 
-  /* ---- autofill prevention: randomized field name, native submit prevented below ---- */
+  /* ---- autofill prevention: randomized field name, native submit prevented below ----
+     The Math.random fallback is for this NON-crypto cosmetic use only — never
+     copy it into key/IV generation; encrypt/decrypt hard-require crypto.subtle. */
   var rnd=new Uint8Array(8);
   (window.crypto||{getRandomValues:function(a){for(var i=0;i<a.length;i++)a[i]=Math.random()*256|0;return a;}}).getRandomValues(rnd);
   var name='s';
@@ -427,8 +439,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"decryption unavailable — OnceVault requires HTTPS (secure context)",
     errNetwork:"network error — could not reach the server",
     errDecrypt:"decryption failed — wrong or corrupted key",
+    errKeyMissing:"this link is incomplete — the decryption key (the part after #) is missing",
     errHttp:"unexpected server response (HTTP {0})",
-    srvBurned:"secret expired or was already burned",
+    srvTaken:"secret expired or was already retrieved",
     srvExpired:"secret expired before it was retrieved",
     srvRate:"rate limit exceeded, try again later",
     srvBlocked:"access blocked",
@@ -443,7 +456,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Read-once:</strong> the first open of a share link atomically fetches and deletes the ciphertext. Anyone opening the same link afterwards — including you — sees an error, never the secret.",
     legendY:"Yellow — your share link, ready to copy and send.",
     legendG:"Green — a secret decrypted for you, shown exactly once.",
-    legendR:"Red — an error: burned, expired, or an invalid key.",
+    legendR:"Red — an error: already retrieved, expired, or an invalid key.",
     hHttps:"<strong>HTTPS required:</strong> the Web Crypto API only works in a secure context, so OnceVault must be served over HTTPS (or localhost for testing).",
     hFree:"OnceVault is free software",
     hLicRest:", released under the MIT License. Copyright © 2026 Günther Mair. Built entirely with LLM tooling (Anthropic Claude and MiniMax models)."},
@@ -456,8 +469,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"дешифрирането не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
     errNetwork:"мрежова грешка — сървърът е недостъпен",
     errDecrypt:"дешифрирането се провали — грешен или повреден ключ",
+    errKeyMissing:"тази връзка е непълна — липсва ключът за дешифриране (частта след #)",
     errHttp:"неочакван отговор от сървъра (HTTP {0})",
-    srvBurned:"тайната е изтекла или вече е била изгорена",
+    srvTaken:"тайната е изтекла или вече е била извлечена",
     srvExpired:"тайната изтече, преди да бъде извлечена",
     srvRate:"превишен лимит на заявките, опитайте отново по-късно",
     srvBlocked:"достъпът е блокиран",
@@ -472,7 +486,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Еднократно четене:</strong> първото отваряне на връзката атомарно извлича и изтрива шифрования текст. Всеки, който отвори същата връзка след това — включително вие — вижда грешка, никога тайната.",
     legendY:"Жълто — вашата връзка за споделяне, готова за копиране и изпращане.",
     legendG:"Зелено — тайна, дешифрирана за вас, показана точно веднъж.",
-    legendR:"Червено — грешка: изгорена, изтекла или невалиден ключ.",
+    legendR:"Червено — грешка: вече извлечена, изтекла или невалиден ключ.",
     hHttps:"<strong>Изисква се HTTPS:</strong> Web Crypto API работи само в защитен контекст, затова OnceVault трябва да се обслужва през HTTPS (или localhost за тестове).",
     hFree:"OnceVault е свободен софтуер",
     hLicRest:", разпространяван под лиценза MIT. Copyright © 2026 Günther Mair. Създаден изцяло с LLM инструменти (модели Anthropic Claude и MiniMax)."},
@@ -485,8 +499,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dešifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNetwork:"chyba sítě — server je nedostupný",
     errDecrypt:"dešifrování selhalo — chybný nebo poškozený klíč",
+    errKeyMissing:"tento odkaz je neúplný — chybí dešifrovací klíč (část za #)",
     errHttp:"neočekávaná odpověď serveru (HTTP {0})",
-    srvBurned:"tajemství vypršelo nebo již bylo spáleno",
+    srvTaken:"tajemství vypršelo nebo již bylo vyzvednuto",
     srvExpired:"tajemství vypršelo dříve, než bylo vyzvednuto",
     srvRate:"překročen limit požadavků, zkuste to později",
     srvBlocked:"přístup zablokován",
@@ -501,7 +516,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Jedno přečtení:</strong> první otevření odkazu atomicky načte a smaže šifrovaný text. Kdokoli otevře stejný odkaz později — včetně vás — uvidí chybu, nikdy tajemství.",
     legendY:"Žlutá — váš odkaz ke sdílení, připravený ke zkopírování a odeslání.",
     legendG:"Zelená — tajemství dešifrované pro vás, zobrazené právě jednou.",
-    legendR:"Červená — chyba: spáleno, vypršelo nebo neplatný klíč.",
+    legendR:"Červená — chyba: již vyzvednuto, vypršelo nebo neplatný klíč.",
     hHttps:"<strong>Vyžadováno HTTPS:</strong> Web Crypto API funguje jen v zabezpečeném kontextu, OnceVault proto musí běžet přes HTTPS (nebo localhost pro testování).",
     hFree:"OnceVault je svobodný software",
     hLicRest:", vydaný pod licencí MIT. Copyright © 2026 Günther Mair. Vytvořeno výhradně pomocí LLM nástrojů (modely Anthropic Claude a MiniMax)."},
@@ -514,8 +529,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dekryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
     errNetwork:"netværksfejl — serveren kunne ikke nås",
     errDecrypt:"dekryptering mislykkedes — forkert eller beskadiget nøgle",
+    errKeyMissing:"dette link er ufuldstændigt — dekrypteringsnøglen (delen efter #) mangler",
     errHttp:"uventet serversvar (HTTP {0})",
-    srvBurned:"hemmeligheden er udløbet eller allerede brændt",
+    srvTaken:"hemmeligheden er udløbet eller allerede hentet",
     srvExpired:"hemmeligheden udløb, før den blev hentet",
     srvRate:"anmodningsgrænsen er overskredet, prøv igen senere",
     srvBlocked:"adgang blokeret",
@@ -530,7 +546,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Læs én gang:</strong> første åbning af linket henter og sletter den krypterede tekst atomart. Enhver, der åbner samme link bagefter — også dig — ser en fejl, aldrig hemmeligheden.",
     legendY:"Gul — dit delingslink, klar til at kopiere og sende.",
     legendG:"Grøn — en hemmelighed dekrypteret til dig, vist præcis én gang.",
-    legendR:"Rød — en fejl: brændt, udløbet eller ugyldig nøgle.",
+    legendR:"Rød — en fejl: allerede hentet, udløbet eller ugyldig nøgle.",
     hHttps:"<strong>HTTPS påkrævet:</strong> Web Crypto API fungerer kun i en sikker kontekst, så OnceVault skal serveres via HTTPS (eller localhost til test).",
     hFree:"OnceVault er fri software",
     hLicRest:", udgivet under MIT-licensen. Copyright © 2026 Günther Mair. Bygget udelukkende med LLM-værktøjer (Anthropic Claude- og MiniMax-modeller)."},
@@ -543,8 +559,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"Entschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
     errNetwork:"Netzwerkfehler — Server nicht erreichbar",
     errDecrypt:"Entschlüsselung fehlgeschlagen — falscher oder beschädigter Schlüssel",
+    errKeyMissing:"dieser Link ist unvollständig — der Schlüssel zum Entschlüsseln (der Teil nach #) fehlt",
     errHttp:"unerwartete Serverantwort (HTTP {0})",
-    srvBurned:"Geheimnis abgelaufen oder bereits verbrannt",
+    srvTaken:"Geheimnis abgelaufen oder bereits abgerufen",
     srvExpired:"Geheimnis lief ab, bevor es abgerufen wurde",
     srvRate:"Anfragelimit überschritten, bitte später erneut versuchen",
     srvBlocked:"Zugriff gesperrt",
@@ -559,7 +576,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Einmal-Lesen:</strong> Das erste Öffnen des Links ruft den Geheimtext atomar ab und löscht ihn. Wer denselben Link danach öffnet — auch du selbst — sieht einen Fehler, nie das Geheimnis.",
     legendY:"Gelb — dein Teilen-Link, bereit zum Kopieren und Versenden.",
     legendG:"Grün — ein für dich entschlüsseltes Geheimnis, genau einmal angezeigt.",
-    legendR:"Rot — ein Fehler: verbrannt, abgelaufen oder ungültiger Schlüssel.",
+    legendR:"Rot — ein Fehler: bereits abgerufen, abgelaufen oder ungültiger Schlüssel.",
     hHttps:"<strong>HTTPS erforderlich:</strong> Die Web Crypto API funktioniert nur in einem sicheren Kontext, daher muss OnceVault über HTTPS ausgeliefert werden (oder localhost zum Testen).",
     hFree:"OnceVault ist freie Software",
     hLicRest:", veröffentlicht unter der MIT-Lizenz. Copyright © 2026 Günther Mair. Vollständig mit LLM-Werkzeugen erstellt (Anthropic-Claude- und MiniMax-Modelle)."},
@@ -572,8 +589,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"η αποκρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
     errNetwork:"σφάλμα δικτύου — αδύνατη η επικοινωνία με τον διακομιστή",
     errDecrypt:"η αποκρυπτογράφηση απέτυχε — λάθος ή κατεστραμμένο κλειδί",
+    errKeyMissing:"αυτός ο σύνδεσμος είναι ελλιπής — λείπει το κλειδί αποκρυπτογράφησης (το τμήμα μετά το #)",
     errHttp:"μη αναμενόμενη απόκριση διακομιστή (HTTP {0})",
-    srvBurned:"το μυστικό έληξε ή έχει ήδη καεί",
+    srvTaken:"το μυστικό έληξε ή έχει ήδη παραληφθεί",
     srvExpired:"το μυστικό έληξε πριν ανακτηθεί",
     srvRate:"υπέρβαση ορίου αιτημάτων, δοκιμάστε ξανά αργότερα",
     srvBlocked:"η πρόσβαση αποκλείστηκε",
@@ -588,7 +606,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Μία ανάγνωση:</strong> το πρώτο άνοιγμα του συνδέσμου ανακτά και διαγράφει ατομικά το κρυπτογραφημένο κείμενο. Όποιος ανοίξει τον ίδιο σύνδεσμο αργότερα — ακόμη κι εσείς — βλέπει σφάλμα, ποτέ το μυστικό.",
     legendY:"Κίτρινο — ο σύνδεσμος κοινοποίησης, έτοιμος για αντιγραφή και αποστολή.",
     legendG:"Πράσινο — ένα μυστικό αποκρυπτογραφημένο για εσάς, εμφανίζεται ακριβώς μία φορά.",
-    legendR:"Κόκκινο — σφάλμα: καμένο, ληγμένο ή μη έγκυρο κλειδί.",
+    legendR:"Κόκκινο — σφάλμα: ήδη παραληφθέν, ληγμένο ή μη έγκυρο κλειδί.",
     hHttps:"<strong>Απαιτείται HTTPS:</strong> το Web Crypto API λειτουργεί μόνο σε ασφαλές περιβάλλον, οπότε το OnceVault πρέπει να σερβίρεται μέσω HTTPS (ή localhost για δοκιμές).",
     hFree:"Το OnceVault είναι ελεύθερο λογισμικό",
     hLicRest:", υπό την άδεια MIT. Copyright © 2026 Günther Mair. Κατασκευασμένο εξ ολοκλήρου με εργαλεία LLM (μοντέλα Anthropic Claude και MiniMax)."},
@@ -601,8 +619,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"descifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
     errNetwork:"error de red — no se pudo contactar con el servidor",
     errDecrypt:"fallo al descifrar — clave errónea o dañada",
+    errKeyMissing:"este enlace está incompleto — falta la clave de descifrado (la parte después de #)",
     errHttp:"respuesta inesperada del servidor (HTTP {0})",
-    srvBurned:"el secreto caducó o ya fue quemado",
+    srvTaken:"el secreto caducó o ya fue recuperado",
     srvExpired:"el secreto caducó antes de ser recuperado",
     srvRate:"límite de peticiones superado, inténtelo más tarde",
     srvBlocked:"acceso bloqueado",
@@ -617,7 +636,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Lectura única:</strong> la primera apertura del enlace recupera y borra el texto cifrado de forma atómica. Quien abra el mismo enlace después — incluido tú — verá un error, nunca el secreto.",
     legendY:"Amarillo — tu enlace para compartir, listo para copiar y enviar.",
     legendG:"Verde — un secreto descifrado para ti, mostrado exactamente una vez.",
-    legendR:"Rojo — un error: quemado, caducado o clave no válida.",
+    legendR:"Rojo — un error: ya recuperado, caducado o clave no válida.",
     hHttps:"<strong>HTTPS obligatorio:</strong> la Web Crypto API solo funciona en un contexto seguro, por lo que OnceVault debe servirse por HTTPS (o localhost para pruebas).",
     hFree:"OnceVault es software libre",
     hLicRest:", publicado bajo la licencia MIT. Copyright © 2026 Günther Mair. Construido íntegramente con herramientas LLM (modelos Anthropic Claude y MiniMax)."},
@@ -630,8 +649,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dekrüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
     errNetwork:"võrguviga — serveriga ei saadud ühendust",
     errDecrypt:"dekrüpteerimine ebaõnnestus — vale või rikutud võti",
+    errKeyMissing:"see link on poolik — dekrüpteerimisvõti (osa pärast #) puudub",
     errHttp:"ootamatu serveri vastus (HTTP {0})",
-    srvBurned:"saladus on aegunud või juba põletatud",
+    srvTaken:"saladus on aegunud või juba kätte saadud",
     srvExpired:"saladus aegus enne, kui see kätte saadi",
     srvRate:"päringulimiit ületatud, proovige hiljem uuesti",
     srvBlocked:"juurdepääs blokeeritud",
@@ -646,7 +666,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Ühekordne lugemine:</strong> lingi esimene avamine laeb ja kustutab krüpteeritud teksti atomaarselt. Igaüks, kes sama lingi hiljem avab — ka sina ise — näeb viga, mitte kunagi saladust.",
     legendY:"Kollane — sinu jagamislink, valmis kopeerimiseks ja saatmiseks.",
     legendG:"Roheline — sinu jaoks dekrüpteeritud saladus, kuvatakse täpselt üks kord.",
-    legendR:"Punane — viga: põletatud, aegunud või vigane võti.",
+    legendR:"Punane — viga: juba kätte saadud, aegunud või vigane võti.",
     hHttps:"<strong>Vajalik on HTTPS:</strong> Web Crypto API töötab ainult turvalises kontekstis, seega tuleb OnceVault serveerida üle HTTPS-i (või testimiseks localhostis).",
     hFree:"OnceVault on vaba tarkvara",
     hLicRest:", välja antud MIT-litsentsi all. Copyright © 2026 Günther Mair. Loodud täielikult LLM-tööriistadega (Anthropic Claude'i ja MiniMaxi mudelid)."},
@@ -659,8 +679,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"salauksen purku ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
     errNetwork:"verkkovirhe — palvelimeen ei saatu yhteyttä",
     errDecrypt:"salauksen purku epäonnistui — väärä tai vioittunut avain",
+    errKeyMissing:"tämä linkki on epätäydellinen — purkuavain (#-merkin jälkeinen osa) puuttuu",
     errHttp:"odottamaton palvelimen vastaus (HTTP {0})",
-    srvBurned:"salaisuus on vanhentunut tai jo poltettu",
+    srvTaken:"salaisuus on vanhentunut tai jo noudettu",
     srvExpired:"salaisuus vanheni ennen kuin se noudettiin",
     srvRate:"pyyntöraja ylittyi, yritä myöhemmin uudelleen",
     srvBlocked:"pääsy estetty",
@@ -675,7 +696,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Kertaluku:</strong> linkin ensimmäinen avaus noutaa ja poistaa salatun tekstin atomisesti. Kuka tahansa saman linkin myöhemmin avaava — myös sinä — näkee virheen, ei koskaan salaisuutta.",
     legendY:"Keltainen — jakolinkkisi, valmis kopioitavaksi ja lähetettäväksi.",
     legendG:"Vihreä — sinulle purettu salaisuus, näytetään täsmälleen kerran.",
-    legendR:"Punainen — virhe: poltettu, vanhentunut tai virheellinen avain.",
+    legendR:"Punainen — virhe: jo noudettu, vanhentunut tai virheellinen avain.",
     hHttps:"<strong>HTTPS vaaditaan:</strong> Web Crypto API toimii vain suojatussa kontekstissa, joten OnceVault on tarjottava HTTPS:n yli (tai localhostissa testausta varten).",
     hFree:"OnceVault on vapaa ohjelmisto",
     hLicRest:", julkaistu MIT-lisenssillä. Copyright © 2026 Günther Mair. Rakennettu kokonaan LLM-työkaluilla (Anthropic Claude- ja MiniMax-mallit)."},
@@ -688,8 +709,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"déchiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
     errNetwork:"erreur réseau — impossible de joindre le serveur",
     errDecrypt:"échec du déchiffrement — clé erronée ou corrompue",
+    errKeyMissing:"ce lien est incomplet — la clé de déchiffrement (la partie après #) est manquante",
     errHttp:"réponse inattendue du serveur (HTTP {0})",
-    srvBurned:"secret expiré ou déjà brûlé",
+    srvTaken:"secret expiré ou déjà récupéré",
     srvExpired:"le secret a expiré avant d'être récupéré",
     srvRate:"limite de requêtes dépassée, réessayez plus tard",
     srvBlocked:"accès bloqué",
@@ -704,7 +726,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Lecture unique :</strong> la première ouverture du lien récupère et supprime le texte chiffré de façon atomique. Quiconque ouvre ensuite le même lien — vous y compris — voit une erreur, jamais le secret.",
     legendY:"Jaune — votre lien de partage, prêt à copier et envoyer.",
     legendG:"Vert — un secret déchiffré pour vous, affiché exactement une fois.",
-    legendR:"Rouge — une erreur : brûlé, expiré ou clé invalide.",
+    legendR:"Rouge — une erreur : déjà récupéré, expiré ou clé invalide.",
     hHttps:"<strong>HTTPS requis :</strong> l'API Web Crypto ne fonctionne que dans un contexte sécurisé, OnceVault doit donc être servi via HTTPS (ou localhost pour les tests).",
     hFree:"OnceVault est un logiciel libre",
     hLicRest:", publié sous licence MIT. Copyright © 2026 Günther Mair. Entièrement construit avec des outils LLM (modèles Anthropic Claude et MiniMax)."},
@@ -717,8 +739,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"níl díchriptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
     errNetwork:"earráid líonra — níorbh fhéidir an freastalaí a shroicheadh",
     errDecrypt:"theip ar an díchriptiú — eochair mhícheart nó truaillithe",
+    errKeyMissing:"tá an nasc seo neamhiomlán — tá an eochair díchriptithe (an chuid i ndiaidh #) ar iarraidh",
     errHttp:"freagra gan choinne ón bhfreastalaí (HTTP {0})",
-    srvBurned:"tá an rún imithe in éag nó dóite cheana",
+    srvTaken:"tá an rún imithe in éag nó faighte cheana",
     srvExpired:"chuaigh an rún in éag sula bhfuarthas é",
     srvRate:"sáraíodh teorainn na n-iarratas, bain triail eile as ar ball",
     srvBlocked:"cosc ar rochtain",
@@ -733,7 +756,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Léamh aonair:</strong> faigheann agus scriosann an chéad oscailt den nasc an téacs criptithe go hadamhach. Feiceann aon duine a osclaíonn an nasc céanna ina dhiaidh sin — tú féin san áireamh — earráid, ní an rún go deo.",
     legendY:"Buí — do nasc roinnte, réidh le cóipeáil agus le seoladh.",
     legendG:"Glas — rún díchriptithe duit, taispeánta uair amháin go díreach.",
-    legendR:"Dearg — earráid: dóite, imithe in éag, nó eochair neamhbhailí.",
+    legendR:"Dearg — earráid: faighte cheana, imithe in éag, nó eochair neamhbhailí.",
     hHttps:"<strong>HTTPS de dhíth:</strong> ní oibríonn an Web Crypto API ach i gcomhthéacs slán, mar sin ní mór OnceVault a sholáthar thar HTTPS (nó localhost le haghaidh tástála).",
     hFree:"Is saorbhogearraí é OnceVault",
     hLicRest:", eisithe faoin gceadúnas MIT. Copyright © 2026 Günther Mair. Tógtha go hiomlán le huirlisí LLM (samhlacha Anthropic Claude agus MiniMax)."},
@@ -746,8 +769,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dešifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
     errNetwork:"mrežna pogreška — poslužitelj nije dostupan",
     errDecrypt:"dešifriranje nije uspjelo — pogrešan ili oštećen ključ",
+    errKeyMissing:"ova poveznica je nepotpuna — nedostaje ključ za dešifriranje (dio nakon #)",
     errHttp:"neočekivan odgovor poslužitelja (HTTP {0})",
-    srvBurned:"tajna je istekla ili je već spaljena",
+    srvTaken:"tajna je istekla ili je već preuzeta",
     srvExpired:"tajna je istekla prije nego što je preuzeta",
     srvRate:"prekoračeno ograničenje zahtjeva, pokušajte kasnije",
     srvBlocked:"pristup blokiran",
@@ -762,7 +786,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Jednokratno čitanje:</strong> prvo otvaranje poveznice atomarno dohvaća i briše šifrirani tekst. Tko god poslije otvori istu poveznicu — uključujući vas — vidi pogrešku, nikad tajnu.",
     legendY:"Žuto — vaša poveznica za dijeljenje, spremna za kopiranje i slanje.",
     legendG:"Zeleno — tajna dešifrirana za vas, prikazana točno jednom.",
-    legendR:"Crveno — pogreška: spaljeno, isteklo ili neispravan ključ.",
+    legendR:"Crveno — pogreška: već preuzeto, isteklo ili neispravan ključ.",
     hHttps:"<strong>Potreban je HTTPS:</strong> Web Crypto API radi samo u sigurnom kontekstu, pa OnceVault mora biti poslužen preko HTTPS-a (ili localhosta za testiranje).",
     hFree:"OnceVault je slobodan softver",
     hLicRest:", objavljen pod licencijom MIT. Copyright © 2026 Günther Mair. U cijelosti izrađen LLM alatima (modeli Anthropic Claude i MiniMax)."},
@@ -775,8 +799,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"a visszafejtés nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
     errNetwork:"hálózati hiba — a szerver nem érhető el",
     errDecrypt:"a visszafejtés sikertelen — hibás vagy sérült kulcs",
+    errKeyMissing:"ez a hivatkozás hiányos — hiányzik a visszafejtő kulcs (a # utáni rész)",
     errHttp:"váratlan szerverválasz (HTTP {0})",
-    srvBurned:"a titok lejárt vagy már elégett",
+    srvTaken:"a titok lejárt vagy már lekérték",
     srvExpired:"a titok lejárt, mielőtt lekérték volna",
     srvRate:"kérési korlát túllépve, próbálja később",
     srvBlocked:"hozzáférés letiltva",
@@ -791,7 +816,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Egyszeri olvasás:</strong> a link első megnyitása atomi módon lekéri és törli a titkosított szöveget. Aki utána nyitja meg ugyanazt a linket — téged is beleértve — hibát lát, sosem a titkot.",
     legendY:"Sárga — a megosztási linked, másolásra és küldésre készen.",
     legendG:"Zöld — egy neked visszafejtett titok, pontosan egyszer megjelenítve.",
-    legendR:"Piros — hiba: elégett, lejárt vagy érvénytelen kulcs.",
+    legendR:"Piros — hiba: már átvéve, lejárt vagy érvénytelen kulcs.",
     hHttps:"<strong>HTTPS szükséges:</strong> a Web Crypto API csak biztonságos környezetben működik, ezért a OnceVaultot HTTPS-en keresztül kell kiszolgálni (vagy teszteléshez localhoston).",
     hFree:"A OnceVault szabad szoftver",
     hLicRest:", MIT licenc alatt kiadva. Copyright © 2026 Günther Mair. Teljes egészében LLM-eszközökkel készült (Anthropic Claude és MiniMax modellek)."},
@@ -804,8 +829,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"decifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
     errNetwork:"errore di rete — impossibile raggiungere il server",
     errDecrypt:"decifratura non riuscita — chiave errata o danneggiata",
+    errKeyMissing:"questo link è incompleto — manca la chiave di decifratura (la parte dopo #)",
     errHttp:"risposta inattesa dal server (HTTP {0})",
-    srvBurned:"il segreto è scaduto o è già stato bruciato",
+    srvTaken:"il segreto è scaduto o è già stato recuperato",
     srvExpired:"il segreto è scaduto prima di essere recuperato",
     srvRate:"limite di richieste superato, riprova più tardi",
     srvBlocked:"accesso bloccato",
@@ -820,7 +846,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Lettura unica:</strong> la prima apertura del link recupera ed elimina il testo cifrato in modo atomico. Chiunque apra lo stesso link in seguito — te compreso — vede un errore, mai il segreto.",
     legendY:"Giallo — il tuo link di condivisione, pronto da copiare e inviare.",
     legendG:"Verde — un segreto decifrato per te, mostrato esattamente una volta.",
-    legendR:"Rosso — un errore: bruciato, scaduto o chiave non valida.",
+    legendR:"Rosso — un errore: già recuperato, scaduto o chiave non valida.",
     hHttps:"<strong>HTTPS obbligatorio:</strong> la Web Crypto API funziona solo in un contesto sicuro, quindi OnceVault deve essere servito via HTTPS (o localhost per i test).",
     hFree:"OnceVault è software libero",
     hLicRest:", rilasciato con licenza MIT. Copyright © 2026 Günther Mair. Realizzato interamente con strumenti LLM (modelli Anthropic Claude e MiniMax)."},
@@ -833,8 +859,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"iššifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
     errNetwork:"tinklo klaida — nepavyko pasiekti serverio",
     errDecrypt:"iššifruoti nepavyko — neteisingas arba sugadintas raktas",
+    errKeyMissing:"ši nuoroda neišsami — trūksta iššifravimo rakto (dalies po #)",
     errHttp:"netikėtas serverio atsakymas (HTTP {0})",
-    srvBurned:"paslaptis nebegalioja arba jau sudeginta",
+    srvTaken:"paslaptis nebegalioja arba jau buvo paimta",
     srvExpired:"paslaptis nustojo galioti prieš ją atsiimant",
     srvRate:"viršyta užklausų riba, bandykite vėliau",
     srvBlocked:"prieiga užblokuota",
@@ -849,7 +876,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Vienkartinis skaitymas:</strong> pirmasis nuorodos atidarymas atomiškai gauna ir ištrina šifruotą tekstą. Kas vėliau atidaro tą pačią nuorodą — įskaitant jus — mato klaidą, niekada paslapties.",
     legendY:"Geltona — jūsų dalijimosi nuoroda, paruošta kopijuoti ir siųsti.",
     legendG:"Žalia — jums iššifruota paslaptis, parodyta lygiai vieną kartą.",
-    legendR:"Raudona — klaida: sudeginta, nebegalioja arba neteisingas raktas.",
+    legendR:"Raudona — klaida: jau paimta, nebegalioja arba neteisingas raktas.",
     hHttps:"<strong>Būtinas HTTPS:</strong> Web Crypto API veikia tik saugiame kontekste, todėl OnceVault turi būti pasiekiamas per HTTPS (arba localhost testavimui).",
     hFree:"OnceVault yra laisva programinė įranga",
     hLicRest:", išleista pagal MIT licenciją. Copyright © 2026 Günther Mair. Visiškai sukurta LLM įrankiais (Anthropic Claude ir MiniMax modeliai)."},
@@ -862,8 +889,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"atšifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
     errNetwork:"tīkla kļūda — serveris nav sasniedzams",
     errDecrypt:"atšifrēšana neizdevās — nepareiza vai bojāta atslēga",
+    errKeyMissing:"šī saite ir nepilnīga — trūkst atšifrēšanas atslēgas (daļas aiz #)",
     errHttp:"negaidīta servera atbilde (HTTP {0})",
-    srvBurned:"noslēpumam beidzies termiņš vai tas jau ir sadedzināts",
+    srvTaken:"noslēpumam beidzies termiņš vai tas jau ir izgūts",
     srvExpired:"noslēpumam beidzās termiņš, pirms tas tika izgūts",
     srvRate:"pārsniegts pieprasījumu limits, mēģiniet vēlāk",
     srvBlocked:"piekļuve bloķēta",
@@ -878,7 +906,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Vienreizēja lasīšana:</strong> pirmā saites atvēršana atomāri izgūst un dzēš šifrēto tekstu. Ikviens, kurš pēc tam atver to pašu saiti — arī jūs — redz kļūdu, nekad noslēpumu.",
     legendY:"Dzeltens — jūsu kopīgošanas saite, gatava kopēšanai un nosūtīšanai.",
     legendG:"Zaļš — jums atšifrēts noslēpums, parādīts tieši vienu reizi.",
-    legendR:"Sarkans — kļūda: sadedzināts, beidzies termiņš vai nederīga atslēga.",
+    legendR:"Sarkans — kļūda: jau izgūts, beidzies termiņš vai nederīga atslēga.",
     hHttps:"<strong>Nepieciešams HTTPS:</strong> Web Crypto API darbojas tikai drošā kontekstā, tāpēc OnceVault jāpasniedz caur HTTPS (vai localhost testēšanai).",
     hFree:"OnceVault ir brīvā programmatūra",
     hLicRest:", izdota ar MIT licenci. Copyright © 2026 Günther Mair. Pilnībā izveidots ar LLM rīkiem (Anthropic Claude un MiniMax modeļi)."},
@@ -891,8 +919,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"id-dekriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
     errNetwork:"żball tan-netwerk — is-server ma setax jintlaħaq",
     errDecrypt:"id-dekriptaġġ falla — ċavetta ħażina jew korrotta",
+    errKeyMissing:"din il-ħolqa mhijiex kompluta — iċ-ċavetta tad-dekriptaġġ (il-parti wara #) hija nieqsa",
     errHttp:"tweġiba mhux mistennija mis-server (HTTP {0})",
-    srvBurned:"is-sigriet skada jew diġà nħaraq",
+    srvTaken:"is-sigriet skada jew diġà nġabar",
     srvExpired:"is-sigriet skada qabel ma nġabar",
     srvRate:"inqabeż il-limitu tat-talbiet, erġa pprova aktar tard",
     srvBlocked:"l-aċċess imblukkat",
@@ -907,7 +936,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Qari ta darba:</strong> l-ewwel ftuħ tal-link jiġbor u jħassar it-test kriptat b'mod atomiku. Kull min jiftaħ l-istess link wara — inkluż int — jara żball, qatt is-sigriet.",
     legendY:"Isfar — il-link tal-qsim tiegħek, lest biex tikkopjah u tibgħatu.",
     legendG:"Aħdar — sigriet dekriptat għalik, muri darba biss.",
-    legendR:"Aħmar — żball: maħruq, skadut, jew ċavetta invalida.",
+    legendR:"Aħmar — żball: diġà nġabar, skadut, jew ċavetta invalida.",
     hHttps:"<strong>Meħtieġ HTTPS:</strong> il-Web Crypto API taħdem biss f'kuntest sigur, għalhekk OnceVault irid jiġi servut fuq HTTPS (jew localhost għall-ittestjar).",
     hFree:"OnceVault huwa softwer ħieles",
     hLicRest:", maħruġ taħt il-liċenzja MIT. Copyright © 2026 Günther Mair. Mibni kompletament b'għodod LLM (mudelli Anthropic Claude u MiniMax)."},
@@ -920,8 +949,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"ontsleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
     errNetwork:"netwerkfout — de server is niet bereikbaar",
     errDecrypt:"ontsleutelen mislukt — verkeerde of beschadigde sleutel",
+    errKeyMissing:"deze link is onvolledig — de ontsleutelingssleutel (het deel na #) ontbreekt",
     errHttp:"onverwacht serverantwoord (HTTP {0})",
-    srvBurned:"geheim is verlopen of al verbrand",
+    srvTaken:"geheim is verlopen of al opgehaald",
     srvExpired:"geheim verliep voordat het werd opgehaald",
     srvRate:"aanvraaglimiet overschreden, probeer het later opnieuw",
     srvBlocked:"toegang geblokkeerd",
@@ -936,7 +966,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Eenmalig lezen:</strong> de eerste opening van de link haalt de versleutelde tekst atomair op en wist hem. Wie daarna dezelfde link opent — ook jijzelf — ziet een fout, nooit het geheim.",
     legendY:"Geel — je deellink, klaar om te kopiëren en te versturen.",
     legendG:"Groen — een voor jou ontsleuteld geheim, precies één keer getoond.",
-    legendR:"Rood — een fout: verbrand, verlopen of ongeldige sleutel.",
+    legendR:"Rood — een fout: al opgehaald, verlopen of ongeldige sleutel.",
     hHttps:"<strong>HTTPS vereist:</strong> de Web Crypto API werkt alleen in een beveiligde context, dus OnceVault moet via HTTPS worden aangeboden (of localhost om te testen).",
     hFree:"OnceVault is vrije software",
     hLicRest:", uitgebracht onder de MIT-licentie. Copyright © 2026 Günther Mair. Volledig gebouwd met LLM-gereedschap (Anthropic Claude- en MiniMax-modellen)."},
@@ -949,8 +979,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"odszyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
     errNetwork:"błąd sieci — nie można połączyć się z serwerem",
     errDecrypt:"odszyfrowanie nie powiodło się — błędny lub uszkodzony klucz",
+    errKeyMissing:"ten link jest niekompletny — brakuje klucza deszyfrującego (części po #)",
     errHttp:"nieoczekiwana odpowiedź serwera (HTTP {0})",
-    srvBurned:"sekret wygasł lub został już spalony",
+    srvTaken:"sekret wygasł lub został już odebrany",
     srvExpired:"sekret wygasł, zanim został odebrany",
     srvRate:"przekroczono limit żądań, spróbuj później",
     srvBlocked:"dostęp zablokowany",
@@ -965,7 +996,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Jednorazowy odczyt:</strong> pierwsze otwarcie linku atomowo pobiera i usuwa zaszyfrowany tekst. Każdy, kto otworzy ten sam link później — łącznie z Tobą — zobaczy błąd, nigdy sekret.",
     legendY:"Żółty — Twój link do udostępnienia, gotowy do skopiowania i wysłania.",
     legendG:"Zielony — sekret odszyfrowany dla Ciebie, wyświetlony dokładnie raz.",
-    legendR:"Czerwony — błąd: spalony, wygasły lub nieprawidłowy klucz.",
+    legendR:"Czerwony — błąd: już odebrany, wygasły lub nieprawidłowy klucz.",
     hHttps:"<strong>Wymagany HTTPS:</strong> Web Crypto API działa tylko w bezpiecznym kontekście, więc OnceVault musi być serwowany przez HTTPS (lub localhost do testów).",
     hFree:"OnceVault jest wolnym oprogramowaniem",
     hLicRest:", wydanym na licencji MIT. Copyright © 2026 Günther Mair. Zbudowany w całości narzędziami LLM (modele Anthropic Claude i MiniMax)."},
@@ -978,8 +1009,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"decifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
     errNetwork:"erro de rede — não foi possível contactar o servidor",
     errDecrypt:"falha ao decifrar — chave errada ou corrompida",
+    errKeyMissing:"este link está incompleto — falta a chave de decifração (a parte depois de #)",
     errHttp:"resposta inesperada do servidor (HTTP {0})",
-    srvBurned:"o segredo expirou ou já foi queimado",
+    srvTaken:"o segredo expirou ou já foi recuperado",
     srvExpired:"o segredo expirou antes de ser recuperado",
     srvRate:"limite de pedidos excedido, tente novamente mais tarde",
     srvBlocked:"acesso bloqueado",
@@ -994,7 +1026,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Leitura única:</strong> a primeira abertura da ligação obtém e apaga o texto cifrado de forma atómica. Quem abrir a mesma ligação depois — incluindo você — vê um erro, nunca o segredo.",
     legendY:"Amarelo — a sua ligação de partilha, pronta a copiar e enviar.",
     legendG:"Verde — um segredo decifrado para si, mostrado exatamente uma vez.",
-    legendR:"Vermelho — um erro: queimado, expirado ou chave inválida.",
+    legendR:"Vermelho — um erro: já recuperado, expirado ou chave inválida.",
     hHttps:"<strong>HTTPS obrigatório:</strong> a Web Crypto API só funciona num contexto seguro, pelo que o OnceVault tem de ser servido por HTTPS (ou localhost para testes).",
     hFree:"O OnceVault é software livre",
     hLicRest:", publicado sob a licença MIT. Copyright © 2026 Günther Mair. Construído inteiramente com ferramentas LLM (modelos Anthropic Claude e MiniMax)."},
@@ -1007,8 +1039,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"decriptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
     errNetwork:"eroare de rețea — serverul nu a putut fi contactat",
     errDecrypt:"decriptarea a eșuat — cheie greșită sau coruptă",
+    errKeyMissing:"acest link este incomplet — lipsește cheia de decriptare (partea de după #)",
     errHttp:"răspuns neașteptat de la server (HTTP {0})",
-    srvBurned:"secretul a expirat sau a fost deja ars",
+    srvTaken:"secretul a expirat sau a fost deja preluat",
     srvExpired:"secretul a expirat înainte de a fi preluat",
     srvRate:"limita de cereri a fost depășită, încercați mai târziu",
     srvBlocked:"acces blocat",
@@ -1023,7 +1056,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Citire unică:</strong> prima deschidere a linkului preia și șterge textul criptat în mod atomic. Oricine deschide același link ulterior — inclusiv dvs. — vede o eroare, niciodată secretul.",
     legendY:"Galben — linkul dvs. de partajare, gata de copiat și trimis.",
     legendG:"Verde — un secret decriptat pentru dvs., afișat exact o dată.",
-    legendR:"Roșu — o eroare: ars, expirat sau cheie invalidă.",
+    legendR:"Roșu — o eroare: deja preluat, expirat sau cheie invalidă.",
     hHttps:"<strong>HTTPS obligatoriu:</strong> Web Crypto API funcționează doar într-un context securizat, deci OnceVault trebuie servit prin HTTPS (sau localhost pentru teste).",
     hFree:"OnceVault este software liber",
     hLicRest:", publicat sub licența MIT. Copyright © 2026 Günther Mair. Construit în întregime cu instrumente LLM (modele Anthropic Claude și MiniMax)."},
@@ -1036,8 +1069,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dešifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNetwork:"chyba siete — server je nedostupný",
     errDecrypt:"dešifrovanie zlyhalo — nesprávny alebo poškodený kľúč",
+    errKeyMissing:"tento odkaz je neúplný — chýba dešifrovací kľúč (časť za #)",
     errHttp:"neočakávaná odpoveď servera (HTTP {0})",
-    srvBurned:"tajomstvo vypršalo alebo už bolo spálené",
+    srvTaken:"tajomstvo vypršalo alebo už bolo prevzaté",
     srvExpired:"tajomstvo vypršalo skôr, než bolo vyzdvihnuté",
     srvRate:"prekročený limit požiadaviek, skúste neskôr",
     srvBlocked:"prístup zablokovaný",
@@ -1052,7 +1086,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Jedno prečítanie:</strong> prvé otvorenie odkazu atomicky načíta a vymaže šifrovaný text. Ktokoľvek otvorí ten istý odkaz neskôr — vrátane vás — uvidí chybu, nikdy tajomstvo.",
     legendY:"Žltá — váš odkaz na zdieľanie, pripravený na skopírovanie a odoslanie.",
     legendG:"Zelená — tajomstvo dešifrované pre vás, zobrazené presne raz.",
-    legendR:"Červená — chyba: spálené, vypršané alebo neplatný kľúč.",
+    legendR:"Červená — chyba: už prevzaté, vypršané alebo neplatný kľúč.",
     hHttps:"<strong>Vyžaduje sa HTTPS:</strong> Web Crypto API funguje len v zabezpečenom kontexte, OnceVault preto musí bežať cez HTTPS (alebo localhost na testovanie).",
     hFree:"OnceVault je slobodný softvér",
     hLicRest:", vydaný pod licenciou MIT. Copyright © 2026 Günther Mair. Vytvorené výhradne pomocou LLM nástrojov (modely Anthropic Claude a MiniMax)."},
@@ -1065,8 +1099,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dešifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
     errNetwork:"omrežna napaka — strežnik ni dosegljiv",
     errDecrypt:"dešifriranje ni uspelo — napačen ali poškodovan ključ",
+    errKeyMissing:"ta povezava je nepopolna — manjka ključ za dešifriranje (del za #)",
     errHttp:"nepričakovan odgovor strežnika (HTTP {0})",
-    srvBurned:"skrivnost je potekla ali je bila že sežgana",
+    srvTaken:"skrivnost je potekla ali je bila že prevzeta",
     srvExpired:"skrivnost je potekla, preden je bila prevzeta",
     srvRate:"presežena omejitev zahtev, poskusite pozneje",
     srvBlocked:"dostop blokiran",
@@ -1081,7 +1116,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Enkratno branje:</strong> prvo odprtje povezave atomsko prevzame in izbriše šifrirano besedilo. Kdorkoli pozneje odpre isto povezavo — tudi vi — vidi napako, nikoli skrivnosti.",
     legendY:"Rumena — vaša povezava za deljenje, pripravljena za kopiranje in pošiljanje.",
     legendG:"Zelena — skrivnost, dešifrirana za vas, prikazana natanko enkrat.",
-    legendR:"Rdeča — napaka: sežgano, poteklo ali neveljaven ključ.",
+    legendR:"Rdeča — napaka: že prevzeto, poteklo ali neveljaven ključ.",
     hHttps:"<strong>Zahtevan je HTTPS:</strong> Web Crypto API deluje le v varnem kontekstu, zato mora biti OnceVault na voljo prek HTTPS (ali localhost za testiranje).",
     hFree:"OnceVault je prosta programska oprema",
     hLicRest:", izdana pod licenco MIT. Copyright © 2026 Günther Mair. V celoti izdelano z orodji LLM (modeli Anthropic Claude in MiniMax)."},
@@ -1094,8 +1129,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"dekryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
     errNetwork:"nätverksfel — servern kunde inte nås",
     errDecrypt:"dekryptering misslyckades — fel eller skadad nyckel",
+    errKeyMissing:"denna länk är ofullständig — dekrypteringsnyckeln (delen efter #) saknas",
     errHttp:"oväntat serversvar (HTTP {0})",
-    srvBurned:"hemligheten har upphört eller redan bränts",
+    srvTaken:"hemligheten har upphört eller redan hämtats",
     srvExpired:"hemligheten upphörde innan den hämtades",
     srvRate:"gränsen för förfrågningar överskriden, försök igen senare",
     srvBlocked:"åtkomst blockerad",
@@ -1110,7 +1146,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>Engångsläsning:</strong> första öppningen av länken hämtar och raderar den krypterade texten atomärt. Den som öppnar samma länk efteråt — även du — ser ett fel, aldrig hemligheten.",
     legendY:"Gul — din delningslänk, redo att kopiera och skicka.",
     legendG:"Grön — en hemlighet dekrypterad åt dig, visad exakt en gång.",
-    legendR:"Röd — ett fel: bränd, utgången eller ogiltig nyckel.",
+    legendR:"Röd — ett fel: redan hämtad, utgången eller ogiltig nyckel.",
     hHttps:"<strong>HTTPS krävs:</strong> Web Crypto API fungerar bara i en säker kontext, så OnceVault måste serveras via HTTPS (eller localhost för test).",
     hFree:"OnceVault är fri programvara",
     hLicRest:", utgiven under MIT-licensen. Copyright © 2026 Günther Mair. Helt byggd med LLM-verktyg (Anthropic Claude- och MiniMax-modeller)."},
@@ -1123,8 +1159,9 @@ dialog li{margin-bottom:4px}
     errNoCryptoDec:"无法解密 — OnceVault 需要 HTTPS（安全上下文）",
     errNetwork:"网络错误 — 无法连接服务器",
     errDecrypt:"解密失败 — 密钥错误或已损坏",
+    errKeyMissing:"此链接不完整 — 缺少解密密钥（# 后面的部分）",
     errHttp:"服务器返回异常响应（HTTP {0}）",
-    srvBurned:"秘密已过期或已被销毁",
+    srvTaken:"秘密已过期或已被取走",
     srvExpired:"秘密在被取回之前已过期",
     srvRate:"请求次数超限，请稍后再试",
     srvBlocked:"访问被拒绝",
@@ -1139,7 +1176,7 @@ dialog li{margin-bottom:4px}
     hOnce:"<strong>阅后即焚：</strong>首次打开链接会以原子方式取回并删除密文。之后任何人再打开同一链接 — 包括您自己 — 只会看到错误，绝不会看到秘密。",
     legendY:"黄色 — 您的分享链接，可复制并发送。",
     legendG:"绿色 — 为您解密的秘密，仅显示一次。",
-    legendR:"红色 — 错误：已销毁、已过期或密钥无效。",
+    legendR:"红色 — 错误：已被取走、已过期或密钥无效。",
     hHttps:"<strong>需要 HTTPS：</strong>Web Crypto API 仅在安全上下文中可用，因此 OnceVault 必须通过 HTTPS 提供（测试时可用 localhost）。",
     hFree:"OnceVault 是自由软件",
     hLicRest:"，以 MIT 许可证发布。Copyright © 2026 Günther Mair。完全使用 LLM 工具构建（Anthropic Claude 与 MiniMax 模型）。"}
@@ -1148,7 +1185,7 @@ dialog li{margin-bottom:4px}
   /* Exact contract error strings (docs/PLAN_STEP_0.md §0.2) → i18n keys, so
      server responses can be localized without the server knowing languages. */
   var SRV_KEYS={
-    "secret expired or was already burned":"srvBurned",
+    "secret expired or was already retrieved":"srvTaken",
     "secret expired before it was retrieved":"srvExpired",
     "rate limit exceeded, try again later":"srvRate",
     "access blocked":"srvBlocked",
@@ -1215,10 +1252,12 @@ dialog li{margin-bottom:4px}
   function showOutput(state,text){
     out.className='out out-'+state;   /* encrypt | decrypt | error */
     outText.textContent=text;
-    input.value='';                  /* reset input first */
-    input.style.height='';            /* back to the one-line default */
-    input.style.overflowY='';
-    renderMask();
+    if(state!=='error'){              /* success: the plaintext is done with */
+      input.value='';
+      input.style.height='';          /* back to the one-line default */
+      input.style.overflowY='';
+      renderMask();
+    }                                 /* error: keep the typed secret intact */
     form.hidden=true;                 /* then hide it */
     out.hidden=false;
   }
@@ -1228,6 +1267,7 @@ dialog li{margin-bottom:4px}
     out.hidden=true;
     out.className='out';
     form.hidden=false;                /* show input again */
+    setRevealed(false);               /* every new cycle starts masked */
     resetUrl();
     input.focus();
   });
@@ -1239,13 +1279,15 @@ dialog li{margin-bottom:4px}
   });
 
   /* ---- eye toggle: masking = transparent glyphs + dot mirror in #mask ---- */
-  eyeBtn.addEventListener('click',function(){
-    var reveal=!input.classList.contains('revealed');
+  function setRevealed(reveal){
     input.classList.toggle('revealed',reveal);
     eyeBtn.classList.toggle('revealed',reveal);
     refreshEyeTitle();
     renderMask();
     autosize();                      /* mono vs page font wrap at different points */
+  }
+  eyeBtn.addEventListener('click',function(){
+    setRevealed(!input.classList.contains('revealed'));
     input.focus();
   });
 
@@ -1266,11 +1308,12 @@ dialog li{margin-bottom:4px}
   }
   input.addEventListener('input',function(){ autosize(); renderMask(); });
 
-  /* ENTER submits (as the old single-line input did); ALT+ENTER inserts a newline */
+  /* ENTER submits (as the old single-line input did); ALT+ENTER inserts a
+     newline, and so does SHIFT+ENTER (near-universal muscle memory) */
   input.addEventListener('keydown',function(e){
     if(e.key!=='Enter'||e.isComposing) return;
     e.preventDefault();
-    if(e.altKey){
+    if(e.altKey||e.shiftKey){
       input.setRangeText('\n',input.selectionStart,input.selectionEnd,'end');
       autosize();                     /* setRangeText fires no input event */
       renderMask();
@@ -1348,17 +1391,33 @@ dialog li{margin-bottom:4px}
     var guid=new URLSearchParams(location.search).get('guid');
     var frag=location.hash.replace(/^#/,'');
     if(!guid||!UUID_RE.test(guid)) return;
-    if(!KEY_RE.test(frag)) return;
+    if(!KEY_RE.test(frag)){
+      /* mail clients and chat apps strip fragments: tell the recipient the
+         key is missing instead of failing silently — and do NOT fetch, so
+         a keyless visit never consumes the secret */
+      showOutput('error',tr('errKeyMissing'));
+      resetUrl();
+      return;
+    }
     if(!window.crypto||!crypto.subtle){
       showOutput('error',tr('errNoCryptoDec'));
       resetUrl();
       return;
     }
+    /* strip guid+key from the address bar BEFORE any network activity — the
+       key is already captured in `frag`, and leaving it visible for the whole
+       fetch would expose it to shoulder surfing and screen recordings */
+    resetUrl();
     fetch('/api/secrets/'+guid)
       .then(function(res){
         if(res.ok){
           return res.json().then(function(body){
-            return crypto.subtle.importKey('raw',b64ToBytes(frag),{name:'AES-GCM'},false,['decrypt'])
+            /* the b64 decodes run inside the guarded chain so any throw
+               reports a decrypt failure, not a network error */
+            return Promise.resolve()
+              .then(function(){
+                return crypto.subtle.importKey('raw',b64ToBytes(frag),{name:'AES-GCM'},false,['decrypt']);
+              })
               .then(function(key){
                 return crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(body.iv)},key,b64ToBytes(body.secret));
               })
@@ -1376,8 +1435,7 @@ dialog li{margin-bottom:4px}
       })
       .catch(function(){
         showOutput('error',tr('errNetwork'));
-      })
-      .then(resetUrl); /* strip ?guid and #fragment from the address bar */
+      });
   }
   decryptOnLoad();
   if(!form.hidden) input.focus();

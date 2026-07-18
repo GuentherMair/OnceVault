@@ -96,11 +96,15 @@ maxmemory-policy noeviction
 ```
 
 Notes:
+- **Redis >= 6.2 required**: retrieval uses the atomic `GETDEL` command (introduced
+  in 6.2). OnceVault checks the server version at startup and refuses to start on an
+  older server (the check is skipped when `INFO` is restricted, as on some managed
+  offerings — on such a setup verify the version yourself).
 - Expiry is redis-native TTL (`SET ... EX`): expired secrets vanish on their own, and
   both `cleanup` steps (purge and vacuum) are no-ops on this backend.
 - Because expired keys are already gone, redis cannot distinguish "expired unread"
-  from "already burned": the HTTP API never returns `410 Gone` on redis — recipients
-  of an expired link see the generic 404 "expired or was already burned" message.
+  from "already retrieved": the HTTP API never returns `410 Gone` on redis — recipients
+  of an expired link see the generic 404 "expired or was already retrieved" message.
 
 ### 3.3 mysql
 
@@ -214,7 +218,10 @@ WantedBy=multi-user.target
 ## 5. Cron cleanup
 
 Expired secrets are already purged opportunistically while the server handles traffic;
-a periodic `cleanup` run additionally vacuums and covers idle periods.
+a periodic `cleanup` run additionally vacuums and covers idle periods. Note that the
+opportunistic purge triggers on retrievals only — a workload that only *creates*
+secrets accumulates expired rows until the next cron run, which is why the cron job
+below is recommended even on busy servers.
 `/etc/cron.d/oncevault`:
 
 ```cron

@@ -21,6 +21,7 @@ OnceVault/
 ├── server/ratelimit.go       # CIDR rules, fixed 1-min window per IP, trusted_proxies resolution
 ├── web/index.html            # ONE self-contained file (HTML+CSS+JS, inline SVG), go:embed
 ├── web/favicon.ico           # vault-wheel icon (PNG-in-ICO 16/32/48), generated, go:embed
+├── tools/gen_favicon/        # deterministic stdlib-only favicon generator (go run ./tools/gen_favicon)
 ├── config.example.yaml       # commented, incl. max_secret_bytes pros/cons
 ├── config.example.json
 ├── README.md / INSTALL.md / CHANGELOG.md

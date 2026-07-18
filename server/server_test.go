@@ -185,7 +185,7 @@ func TestPostValidationMatrix(t *testing.T) {
 		{"empty body", ``, msgInvalidJSON},
 		{"trailing garbage", postBody(validSecret, validIV, 24) + "x", msgInvalidJSON},
 		{"wrong field type", `{"secret":1,"iv":"` + validIV + `","duration":24}`, msgInvalidJSON},
-		{"body exceeds cap", `{"pad":"` + strings.Repeat("A", 4096) + `"}`, msgInvalidJSON},
+		{"body exceeds cap", `{"pad":"` + strings.Repeat("A", 4096) + `"}`, msgSecretSize},
 		{"secret missing", `{"iv":"` + validIV + `","duration":24}`, msgSecretEmpty},
 		{"secret empty", postBody("", validIV, 24), msgSecretEmpty},
 		{"secret bad base64", postBody("not$$base64", validIV, 24), msgSecretEmpty},
@@ -319,7 +319,7 @@ func TestGetMatrix(t *testing.T) {
 		}
 
 		rr = do(t, srv, "GET", "/api/secrets/"+v.GUID, "192.0.2.10:1", "", nil)
-		wantError(t, rr, http.StatusNotFound, msgBurned)
+		wantError(t, rr, http.StatusNotFound, msgTaken)
 	})
 
 	t.Run("410 expired fixture", func(t *testing.T) {
@@ -334,14 +334,14 @@ func TestGetMatrix(t *testing.T) {
 		wantError(t, rr, http.StatusGone, msgExpired)
 		// Row was deleted with the expired take.
 		rr = do(t, srv, "GET", "/api/secrets/"+guid, "192.0.2.10:1", "", nil)
-		wantError(t, rr, http.StatusNotFound, msgBurned)
+		wantError(t, rr, http.StatusNotFound, msgTaken)
 	})
 
 	t.Run("404 unknown guid", func(t *testing.T) {
 		cfg := loadCfg(t, map[string]any{})
 		srv := New(cfg, memStore(t), []byte(testIndex), testFavicon)
 		rr := do(t, srv, "GET", "/api/secrets/"+unknownGUID, "192.0.2.10:1", "", nil)
-		wantError(t, rr, http.StatusNotFound, msgBurned)
+		wantError(t, rr, http.StatusNotFound, msgTaken)
 	})
 
 	t.Run("404 malformed guid short-circuits without store hit", func(t *testing.T) {
@@ -350,7 +350,7 @@ func TestGetMatrix(t *testing.T) {
 		srv := New(cfg, fs, []byte(testIndex), testFavicon)
 		for _, g := range []string{"nope", "01234567-89ab-4cde-8f01-23456789abcg", "0123456789ab4cde8f0123456789abcd"} {
 			rr := do(t, srv, "GET", "/api/secrets/"+g, "192.0.2.10:1", "", nil)
-			wantError(t, rr, http.StatusNotFound, msgBurned)
+			wantError(t, rr, http.StatusNotFound, msgTaken)
 		}
 		if n := fs.takeCalls.Load(); n != 0 {
 			t.Fatalf("TakeOnce called %d times for malformed guids, want 0", n)
@@ -388,7 +388,7 @@ func TestReadOnceOverHTTP(t *testing.T) {
 		t.Fatalf("first GET = %d, want 200", first.Code)
 	}
 	second := do(t, srv, "GET", "/api/secrets/"+v.GUID, "192.0.2.10:1", "", nil)
-	wantError(t, second, http.StatusNotFound, msgBurned)
+	wantError(t, second, http.StatusNotFound, msgTaken)
 }
 
 // --- routing ---------------------------------------------------------------
@@ -410,6 +410,18 @@ func TestRouting(t *testing.T) {
 		}
 		if rr.Body.String() != testIndex {
 			t.Fatalf("body = %q, want index bytes", rr.Body.String())
+		}
+		if xcto := rr.Header().Get("X-Content-Type-Options"); xcto != "nosniff" {
+			t.Fatalf("X-Content-Type-Options = %q, want nosniff", xcto)
+		}
+		if rp := rr.Header().Get("Referrer-Policy"); rp != "no-referrer" {
+			t.Fatalf("Referrer-Policy = %q, want no-referrer", rp)
+		}
+		if csp := rr.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "default-src 'none'") {
+			t.Fatalf("Content-Security-Policy = %q, want a default-src 'none' policy", csp)
+		}
+		if xfo := rr.Header().Get("X-Frame-Options"); xfo != "DENY" {
+			t.Fatalf("X-Frame-Options = %q, want DENY", xfo)
 		}
 	})
 
@@ -482,7 +494,7 @@ func TestPurgeFailureNotSurfaced(t *testing.T) {
 	fs := &fakeStore{purgeErr: errors.New("purge broke")}
 	srv := New(cfg, fs, []byte(testIndex), testFavicon)
 	rr := do(t, srv, "GET", "/api/secrets/01234567-89ab-4cde-8f01-23456789abcd", "192.0.2.10:1", "", nil)
-	wantError(t, rr, http.StatusNotFound, msgBurned)
+	wantError(t, rr, http.StatusNotFound, msgTaken)
 }
 
 // --- guid generator --------------------------------------------------------

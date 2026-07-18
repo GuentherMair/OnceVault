@@ -72,8 +72,11 @@ func (s *MySQL) Put(ctx context.Context, guid, secret, iv string, expires int64)
 // transaction: SELECT…FOR UPDATE locks the row, DELETE removes it, commit.
 // The expiry flag is computed by MySQL (UNIX_TIMESTAMP()), never by the Go clock.
 // The row is deleted even when expired; rollback on any error.
+// READ COMMITTED keeps InnoDB from taking gap locks when the guid does not
+// exist — under the default REPEATABLE READ, concurrent probes of absent
+// guids plus inserts are a deadlock recipe.
 func (s *MySQL) TakeOnce(ctx context.Context, guid string) (string, string, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return "", "", err
 	}

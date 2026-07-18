@@ -28,6 +28,13 @@ prefer plain 404 to avoid enumeration hints).
 Serves the embedded `web/index.html` (`Content-Type: text/html; charset=utf-8`).
 `Cache-Control: no-store` on every response (page and API).
 
+Amendment 2026-07-18 (security headers): every response additionally carries
+`X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`; the page
+response also carries `X-Frame-Options: DENY` and a strict
+`Content-Security-Policy` (`default-src 'none'` with only inline script/style
+and same-origin img/connect allowed — the frontend loads nothing external by
+design).
+
 ### `GET /favicon.ico` (exact path only)
 Serves the embedded `web/favicon.ico` byte-identical (`Content-Type: image/x-icon`).
 The file is a PNG-in-ICO container (16/32/48 px) showing a white vault wheel (ring +
@@ -50,6 +57,11 @@ Validation order and **exact error strings**:
 | `iv` std-base64-decodable, decoded len == 12 | `iv must be base64 encoding exactly 12 bytes` |
 | `duration` ∈ {1,4,8,24,48,120,168} | `duration must be one of: 1, 4, 8, 24, 48, 120, 168` |
 
+Amendment 2026-07-18: a body exceeding the size cap short-circuits to
+`secret exceeds maximum allowed size` (the existing frozen string — an
+over-cap body can only mean an oversized secret) instead of being reported
+as malformed JSON.
+
 Responses:
 - `201 Created` → `{"guid":"<uuidv4>"}`
 - `400 Bad Request` → table above
@@ -67,9 +79,16 @@ non-matching guids short-circuit to the 404 response below (no DB hit, no format
 Read-once take: fetch+delete atomically; `isexpired` derived **DB-internally**
 (`expires <= now` evaluated by the DB engine, not in Go).
 
+- `429 Too Many Requests` → `{"error":"rate limit exceeded, try again later"}` —
+  amendment 2026-07-18: retrieval shares the POST rate-limit budget (one combined
+  per-IP window), so the GET path cannot be used as a free DB-load amplifier.
+  Checked before the guid regex.
 - `200 OK` → `{"secret":"<b64>","iv":"<b64>"}` (found, not expired — row deleted)
 - `410 Gone` → `{"error":"secret expired before it was retrieved"}` (found, expired — row deleted) — **never occurs on the redis backend** (native TTL already removed it → 404)
-- `404 Not Found` → `{"error":"secret expired or was already burned"}` (no row)
+- `404 Not Found` → `{"error":"secret expired or was already retrieved"}` (no row)
+  — wording amended 2026-07-18: the former "…was already burned" string was
+  replaced when the burn metaphor was removed product-wide; frontend `SRV_KEYS`
+  maps the new string.
 - `500 Internal Server Error` → `{"error":"unexpected backend failure"}` (any other condition; handler is fully panic/exception-proof)
 
 After responding, the handler triggers the throttled opportunistic purge (≤1/min,
@@ -186,15 +205,22 @@ max_secret_bytes: 16384         # decoded ciphertext cap; 1024 strict / 16384 ba
 trusted_proxies: []             # CIDRs of reverse proxies allowed to set X-Forwarded-For
 rate_limit:
   default: 60                   # POST/min for unmatched addresses; 0 → startup WARNING, revert to 6000
-  rules:                        # CIDR → "0" unlimited | "-" blocked (ALL routes) | "n" POST/min
+  rules:                        # CIDR → "0" unlimited | "-" blocked (ALL routes) | "n" API-req/min
+                                # (amendment 2026-07-18: POST and retrieval GET share the budget;
+                                #  the limiter buckets IPv6 clients by /64)
     "10.0.0.0/8": "0"
     "192.0.2.0/24": "-"
 ```
 
 Validation on load: driver ∈ set; dsn non-empty; max_secret_bytes ≥ 1 (0/absent →
-default 16384); every rules key parses as CIDR (a bare IP is normalized to /32 or /128);
-every rules value is `"0"`, `"-"`, or a positive integer string; `default` ≥ 0
-(`0` → `slog.Warn` + set 6000). Longest-prefix match wins; IPv4 and IPv6 handled.
+default 16384) and ≤ 16 MiB (amendment 2026-07-18 — the POST handler buffers up to
+~4/3 of it per request); `listen` must parse as host:port (amendment 2026-07-18 —
+fail at load, not at bind); every rules key parses as CIDR (a bare IP is normalized
+to /32 or /128); every rules value is `"0"`, `"-"`, or a positive integer string;
+`default` ≥ 0 (`0` → `slog.Warn` + set 6000); a match-everything trusted_proxies
+prefix (`/0`) loads but logs a loud warning (amendment 2026-07-18 — it lets every
+client spoof its IP via X-Forwarded-For). Longest-prefix match wins; IPv4 and IPv6
+handled.
 
 ## 0.6 Frontend↔backend crypto contract
 

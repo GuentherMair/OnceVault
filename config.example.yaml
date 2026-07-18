@@ -34,7 +34,9 @@ db:
 #                               in your database until it expires. Combine with
 #                               tighter rate limits if you go this high.
 #
-# 0 or absent falls back to the 16384 default; the value must otherwise be >= 1.
+# 0 or absent falls back to the 16384 default; the value must otherwise be
+# >= 1 and <= 16777216 (16 MiB — the server buffers up to ~4/3 of this value
+# in memory per request, so an unbounded value would be a memory-abuse vector).
 max_secret_bytes: 16384
 
 # CIDRs of reverse proxies allowed to set X-Forwarded-For. Only when the direct

@@ -11,7 +11,7 @@ Owns: `server/server.go`, `server/ratelimit.go`, `server/server_test.go`,
 - Middleware order: panic recovery (→ 500 backend-failure JSON, `slog.Error` with stack) → client-IP resolution → blocked-CIDR check (403 on ALL routes) → mux.
 - Client IP per contract 0.5: peer from `r.RemoteAddr`; if peer ∈ `trusted_proxies`, walk `X-Forwarded-For` right→left, first hop outside trusted_proxies wins; all trusted → leftmost; unparsable → peer.
 - POST handler: `http.MaxBytesReader` cap per 0.2; validation order + exact error strings per 0.2; UUIDv4 via `crypto/rand` (hand-rolled, version/variant bits set); `store.Put`; `ErrDuplicate` → regenerate once, retry; any store failure → 500 contract string (real error only to slog).
-- GET handler: guid regex short-circuit → 404 burned-message; `store.TakeOnce` → 200/`ErrExpired`→410/`ErrNotFound`→404/other→500, exact strings per 0.2. After writing the response trigger the throttled purge.
+- GET handler: guid regex short-circuit → 404 already-retrieved message; `store.TakeOnce` → 200/`ErrExpired`→410/`ErrNotFound`→404/other→500, exact strings per 0.2. After writing the response trigger the throttled purge.
 - Throttled purge: atomic unix-timestamp guard (CAS), min 60s interval; runs `store.PurgeExpired` in a goroutine with its own context+timeout; failures → `slog.Warn` only. Never blocks or fails a request.
 
 ## server/ratelimit.go

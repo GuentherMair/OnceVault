@@ -5,6 +5,55 @@ All notable changes to OnceVault are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-18
+
+### Added
+
+- Localized "link incomplete — decryption key missing" error when a share link
+  arrives without its `#fragment` (mail clients strip fragments); no request is
+  made, so a keyless visit never consumes the secret.
+- Security headers served by the binary: `X-Content-Type-Options: nosniff` on
+  every response; a strict `Content-Security-Policy` and `X-Frame-Options: DENY`
+  on the page.
+- Redis backend refuses servers older than 6.2 at startup (retrieval needs
+  `GETDEL`); requirement documented in INSTALL.md.
+- The favicon generator is now part of the repository
+  (`tools/gen_favicon`, stdlib-only, deterministic); `web/favicon.ico`
+  regenerated from it.
+- SHIFT+ENTER inserts a newline, same as ALT+ENTER.
+
+### Changed
+
+- An error panel (network failure, rate limit, backend error) no longer clears
+  the typed secret — only a successful encrypt/decrypt does.
+- Retrieval (`GET /api/secrets/{guid}`) now shares the POST rate-limit budget
+  (contract amendment 2026-07-18), closing a DB-load amplification vector.
+- The rate limiter buckets IPv6 clients by /64, so one subscriber cannot mint
+  unlimited limiter entries by rotating addresses.
+- MySQL `TakeOnce` runs at READ COMMITTED, avoiding gap-lock deadlocks when
+  absent GUIDs are probed concurrently.
+- `max_secret_bytes` is now capped at 16 MiB at config load (the server buffers
+  up to ~4/3 of it per request); `listen` is validated as host:port at load; a
+  match-everything `trusted_proxies` prefix (`/0`) logs a loud spoofing warning.
+- A request body exceeding the size cap now reports the contract's
+  "secret exceeds maximum allowed size" instead of "invalid JSON request body".
+- `Referrer-Policy: no-referrer` is served on every response (previously only a
+  meta tag).
+- The share URL (GUID and key fragment) is stripped from the address bar before
+  the retrieval request fires, not after it completes.
+- Graceful shutdown now waits for an in-flight opportunistic purge before
+  closing the store (no more spurious purge warnings on clean shutdowns).
+- SQLite duplicate detection matches the primary-key/unique extended error
+  codes precisely instead of every constraint class.
+- **API wording change**: the 404 retrieval error string is now
+  `secret expired or was already retrieved` (formerly "…was already burned") —
+  part of removing the burn metaphor product-wide (UI, docs, and wire strings;
+  frontend and backend ship together in one binary, so no compatibility skew).
+- Every new input cycle starts masked: closing the output panel resets the eye
+  toggle.
+- The stored theme is applied before first paint (no wrong-theme flash on load).
+- README notes that all non-English translations are machine-generated.
+
 ## [1.0.1] - 2026-07-18
 
 ### Changed
@@ -85,5 +134,6 @@ Initial release.
 - MIT License; SPDX headers in all source files; provenance note — built entirely
   with LLM tooling (Anthropic Claude and MiniMax models).
 
+[1.0.2]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.2
 [1.0.1]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.1
 [1.0.0]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.0

@@ -74,8 +74,11 @@ func (s *SQLite) Put(ctx context.Context, guid, secret, iv string, expires int64
 		`INSERT INTO secrets (guid, secret, iv, expires) VALUES (?, ?, ?, ?)`,
 		guid, secret, iv, expires); err != nil {
 		tx.Rollback()
+		// Only the guid PK can collide in this schema; match its extended codes
+		// precisely (1555 = SQLITE_CONSTRAINT_PRIMARYKEY, 2067 = _UNIQUE)
+		// instead of masking every SQLITE_CONSTRAINT_* variant to ErrDuplicate.
 		var se *sqlite3.Error
-		if errors.As(err, &se) && se.Code()&0xff == 19 { // SQLITE_CONSTRAINT
+		if errors.As(err, &se) && (se.Code() == 1555 || se.Code() == 2067) {
 			return ErrDuplicate
 		}
 		return err

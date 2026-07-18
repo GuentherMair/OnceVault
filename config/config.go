@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -22,6 +23,11 @@ import (
 const (
 	defaultListen         = "127.0.0.1:8420"
 	defaultMaxSecretBytes = 16384
+	// maxMaxSecretBytes caps max_secret_bytes (amendment 2026-07-18): the POST
+	// handler buffers request bodies up to ~4/3 of this value in memory, so an
+	// absurd configured value must not turn uploads into a memory-exhaustion
+	// vector (or overflow the body-cap arithmetic).
+	maxMaxSecretBytes = 16 << 20 // 16 MiB
 	// fallbackDefaultLimit replaces rate_limit.default=0, which would disable limiting.
 	fallbackDefaultLimit = 6000
 )
@@ -97,6 +103,10 @@ func (c *Config) finalize() error {
 	if c.Listen == "" {
 		c.Listen = defaultListen
 	}
+	// Fail at load time, not at ListenAndServe (amendment 2026-07-18).
+	if _, _, err := net.SplitHostPort(c.Listen); err != nil {
+		return fmt.Errorf("listen %q invalid: must be host:port (%v)", c.Listen, err)
+	}
 	if !validDrivers[c.DB.Driver] {
 		return fmt.Errorf("db.driver %q invalid: must be one of sqlite, redis, mysql, postgres", c.DB.Driver)
 	}
@@ -108,6 +118,9 @@ func (c *Config) finalize() error {
 	}
 	if c.MaxSecretBytes < 1 {
 		return fmt.Errorf("max_secret_bytes must be >= 1, got %d", c.MaxSecretBytes)
+	}
+	if c.MaxSecretBytes > maxMaxSecretBytes {
+		return fmt.Errorf("max_secret_bytes must be <= %d (16 MiB), got %d", maxMaxSecretBytes, c.MaxSecretBytes)
 	}
 
 	if c.RateLimit.Default < 0 {
@@ -125,6 +138,12 @@ func (c *Config) finalize() error {
 			return fmt.Errorf("trusted_proxies entry %q: %w", s, err)
 		}
 		c.TrustedProxyNets = append(c.TrustedProxyNets, p)
+		// A match-everything prefix means ANY client may spoof its address via
+		// X-Forwarded-For, neutralizing block and rate-limit rules. Almost
+		// certainly a config mistake — warn loudly but keep running.
+		if p.Bits() == 0 {
+			slog.Warn("trusted_proxies contains a match-everything prefix: any client can spoof its IP via X-Forwarded-For, neutralizing block and rate-limit rules", "prefix", s)
+		}
 	}
 
 	c.Rules = make([]Rule, 0, len(c.RateLimit.Rules))
