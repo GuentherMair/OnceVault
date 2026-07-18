@@ -5,6 +5,35 @@ All notable changes to OnceVault are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-07-18
+
+### Added
+
+- In-pill copy button (first icon, front-left) that copies the typed secret,
+  with the same check-mark feedback as the output panel's copy action.
+- "Generate secret" button next to Encrypt, producing a strong random secret
+  directly in the input field; localized in all 25 languages.
+- Embedded "OnceVault Disc" mask font (`tools/gen_maskfont`, stdlib-only,
+  deterministic, 968 bytes as a data: URI): every Unicode codepoint renders as
+  one centered disc at a single fixed advance.
+
+### Changed
+
+- The input pill now adapts its layout: when the secret no longer fits on one
+  row between the icons (or contains newlines), the textarea expands to a
+  full-width row and copy/eye/duration move to a second row — deleting back to
+  a fitting single line restores the compact pill; the second row keeps the
+  same distance from the pill's bottom border as in the one-line layout.
+- Masking now works "by identity": once the disc font is confirmed loaded, the
+  masked textarea shows its own glyphs — every character (spaces included) is
+  a disc, so caret, selection, and soft-wrap positions always match the dots
+  exactly, for any content, at any width (this also removes the former
+  CJK/emoji double-width edge case). If the font cannot load, the previous
+  dot-mirror overlay remains as the fallback, so a missing font can never
+  reveal plaintext.
+- Content-Security-Policy additionally allows `font-src data:` for exactly
+  this one embedded asset; the page remains free of external requests.
+
 ## [1.0.2] - 2026-07-18
 
 ### Added
@@ -134,6 +163,7 @@ Initial release.
 - MIT License; SPDX headers in all source files; provenance note — built entirely
   with LLM tooling (Anthropic Claude and MiniMax models).
 
+[1.0.3]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.3
 [1.0.2]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.2
 [1.0.1]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.1
 [1.0.0]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.0

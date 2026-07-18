@@ -31,9 +31,9 @@ Serves the embedded `web/index.html` (`Content-Type: text/html; charset=utf-8`).
 Amendment 2026-07-18 (security headers): every response additionally carries
 `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`; the page
 response also carries `X-Frame-Options: DENY` and a strict
-`Content-Security-Policy` (`default-src 'none'` with only inline script/style
-and same-origin img/connect allowed — the frontend loads nothing external by
-design).
+`Content-Security-Policy` (`default-src 'none'` with only inline script/style,
+same-origin img/connect, and `font-src data:` for the embedded mask font
+allowed — the frontend loads nothing external by design).
 
 ### `GET /favicon.ico` (exact path only)
 Serves the embedded `web/favicon.ico` byte-identical (`Content-Type: image/x-icon`).

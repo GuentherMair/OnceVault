@@ -202,11 +202,12 @@ func inNets(nets []netip.Prefix, a netip.Addr) bool {
 	return false
 }
 
-// indexCSP locks the page down to its own inline script/style and same-origin
-// fetch/favicon — the frontend loads nothing external by design (invariant 3),
-// so everything else can be denied outright.
+// indexCSP locks the page down to its own inline script/style, same-origin
+// fetch/favicon, and the embedded data: mask font — the frontend loads
+// nothing external by design (invariant 3), so everything else can be denied
+// outright.
 const indexCSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +
-	"img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+	"img-src 'self'; connect-src 'self'; font-src data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
