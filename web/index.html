@@ -191,15 +191,15 @@ form{
   form{margin-inline:0}
 }
 
-/* ---- encrypt button, Google-Search style ---- */
-.actions{margin-top:28px}
-.encrypt-btn{
+/* ---- action buttons, Google-Search style ---- */
+.actions{margin-top:28px;display:flex;gap:10px;justify-content:center}
+.action-btn{
   background:var(--btn-bg);
   border:1px solid transparent;border-radius:4px;
   font-size:14px;padding:10px 18px;color:var(--fg);
   transition:box-shadow .12s,border-color .12s;
 }
-.encrypt-btn:hover{border-color:var(--border);box-shadow:0 1px 1px rgba(0,0,0,.1)}
+.action-btn:hover{border-color:var(--border);box-shadow:0 1px 1px rgba(0,0,0,.1)}
 
 /* ---- tri-state output panel ---- */
 .out{
@@ -319,6 +319,10 @@ try{
       <button id="eyeBtn" class="iconbtn" type="button" title="Show secret" aria-label="Toggle secret visibility">
         <svg id="iEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line id="iEyeSlash" x1="2" y1="2" x2="22" y2="22"/></svg>
       </button>
+      <button id="copyInBtn" class="iconbtn" type="button" title="Copy" aria-label="Copy secret">
+        <svg id="iCopyIn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg id="iCheckIn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
       <select id="duration" aria-label="Expires after">
         <option value="1">1h</option>
         <option value="4">4h</option>
@@ -330,7 +334,8 @@ try{
       </select>
     </div>
     <div class="actions">
-      <button id="encBtn" class="encrypt-btn" type="submit">Encrypt</button>
+      <button id="encBtn" class="action-btn" type="submit">Encrypt</button>
+      <button id="genBtn" class="action-btn" type="button">Generate secret</button>
     </div>
   </form>
 
@@ -376,8 +381,9 @@ try{
   var $ = function(id){ return document.getElementById(id); };
   var form=$('form'), input=$('secret'), mask=$('mask'), durationSel=$('duration'),
       eyeBtn=$('eyeBtn'),
-      out=$('out'), outText=$('outText'), encBtn=$('encBtn'),
+      out=$('out'), outText=$('outText'), encBtn=$('encBtn'), genBtn=$('genBtn'),
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
+      copyInBtn=$('copyInBtn'), iCopyIn=$('iCopyIn'), iCheckIn=$('iCheckIn'),
       themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose'),
       langBtn=$('langBtn'), langSel=$('langSel');
 
@@ -430,13 +436,14 @@ try{
      and the fallback for any missing key. Keys hCrypto/hDur/hOnce/hHttps/
      hLicRest may carry <strong>/<code> markup (own static strings only). ---- */
   var I18N={
-  en:{name:"English",secret:"Secret",encrypt:"Encrypt",lang:"Language",
+  en:{name:"English",secret:"Secret",encrypt:"Encrypt",generate:"Generate secret",lang:"Language",
     theme:"Theme: system → dark → light",help:"About OnceVault",
     eyeShow:"Show secret",eyeHide:"Hide secret",durAria:"Expires after",
     copy:"Copy",close:"Close",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"encryption unavailable — OnceVault requires HTTPS (secure context)",
     errNoCryptoDec:"decryption unavailable — OnceVault requires HTTPS (secure context)",
+    errNoCryptoGen:"secret generation unavailable — OnceVault requires HTTPS (secure context)",
     errNetwork:"network error — could not reach the server",
     errDecrypt:"decryption failed — wrong or corrupted key",
     errKeyMissing:"this link is incomplete — the decryption key (the part after #) is missing",
@@ -460,13 +467,14 @@ try{
     hHttps:"<strong>HTTPS required:</strong> the Web Crypto API only works in a secure context, so OnceVault must be served over HTTPS (or localhost for testing).",
     hFree:"OnceVault is free software",
     hLicRest:", released under the MIT License. Copyright © 2026 Günther Mair. Built entirely with LLM tooling (Anthropic Claude and MiniMax models)."},
-  bg:{name:"Български",secret:"Тайна",encrypt:"Шифровай",lang:"Език",
+  bg:{name:"Български",secret:"Тайна",encrypt:"Шифровай",generate:"Генерирай тайна",lang:"Език",
     theme:"Тема: системна → тъмна → светла",help:"За OnceVault",
     eyeShow:"Покажи тайната",eyeHide:"Скрий тайната",durAria:"Изтича след",
     copy:"Копирай",close:"Затвори",
     dur:["1 ч","4 ч","8 ч","1 д","2 д","5 д","7 д"],
     errNoCryptoEnc:"шифроването не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
     errNoCryptoDec:"дешифрирането не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
+    errNoCryptoGen:"генерирането на тайна не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
     errNetwork:"мрежова грешка — сървърът е недостъпен",
     errDecrypt:"дешифрирането се провали — грешен или повреден ключ",
     errKeyMissing:"тази връзка е непълна — липсва ключът за дешифриране (частта след #)",
@@ -490,13 +498,14 @@ try{
     hHttps:"<strong>Изисква се HTTPS:</strong> Web Crypto API работи само в защитен контекст, затова OnceVault трябва да се обслужва през HTTPS (или localhost за тестове).",
     hFree:"OnceVault е свободен софтуер",
     hLicRest:", разпространяван под лиценза MIT. Copyright © 2026 Günther Mair. Създаден изцяло с LLM инструменти (модели Anthropic Claude и MiniMax)."},
-  cs:{name:"Čeština",secret:"Tajemství",encrypt:"Zašifrovat",lang:"Jazyk",
+  cs:{name:"Čeština",secret:"Tajemství",encrypt:"Zašifrovat",generate:"Vygenerovat tajemství",lang:"Jazyk",
     theme:"Motiv: systém → tmavý → světlý",help:"O OnceVault",
     eyeShow:"Zobrazit tajemství",eyeHide:"Skrýt tajemství",durAria:"Vyprší za",
     copy:"Kopírovat",close:"Zavřít",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNoCryptoDec:"dešifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNoCryptoGen:"generování tajemství není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNetwork:"chyba sítě — server je nedostupný",
     errDecrypt:"dešifrování selhalo — chybný nebo poškozený klíč",
     errKeyMissing:"tento odkaz je neúplný — chybí dešifrovací klíč (část za #)",
@@ -520,13 +529,14 @@ try{
     hHttps:"<strong>Vyžadováno HTTPS:</strong> Web Crypto API funguje jen v zabezpečeném kontextu, OnceVault proto musí běžet přes HTTPS (nebo localhost pro testování).",
     hFree:"OnceVault je svobodný software",
     hLicRest:", vydaný pod licencí MIT. Copyright © 2026 Günther Mair. Vytvořeno výhradně pomocí LLM nástrojů (modely Anthropic Claude a MiniMax)."},
-  da:{name:"Dansk",secret:"Hemmelighed",encrypt:"Kryptér",lang:"Sprog",
+  da:{name:"Dansk",secret:"Hemmelighed",encrypt:"Kryptér",generate:"Generer hemmelighed",lang:"Sprog",
     theme:"Tema: system → mørkt → lyst",help:"Om OnceVault",
     eyeShow:"Vis hemmelighed",eyeHide:"Skjul hemmelighed",durAria:"Udløber efter",
     copy:"Kopiér",close:"Luk",
     dur:["1 t","4 t","8 t","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"kryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
     errNoCryptoDec:"dekryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
+    errNoCryptoGen:"generering af hemmelighed utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
     errNetwork:"netværksfejl — serveren kunne ikke nås",
     errDecrypt:"dekryptering mislykkedes — forkert eller beskadiget nøgle",
     errKeyMissing:"dette link er ufuldstændigt — dekrypteringsnøglen (delen efter #) mangler",
@@ -550,13 +560,14 @@ try{
     hHttps:"<strong>HTTPS påkrævet:</strong> Web Crypto API fungerer kun i en sikker kontekst, så OnceVault skal serveres via HTTPS (eller localhost til test).",
     hFree:"OnceVault er fri software",
     hLicRest:", udgivet under MIT-licensen. Copyright © 2026 Günther Mair. Bygget udelukkende med LLM-værktøjer (Anthropic Claude- og MiniMax-modeller)."},
-  de:{name:"Deutsch",secret:"Geheimnis",encrypt:"Verschlüsseln",lang:"Sprache",
+  de:{name:"Deutsch",secret:"Geheimnis",encrypt:"Verschlüsseln",generate:"Geheimnis generieren",lang:"Sprache",
     theme:"Design: System → Dunkel → Hell",help:"Über OnceVault",
     eyeShow:"Geheimnis anzeigen",eyeHide:"Geheimnis verbergen",durAria:"Läuft ab nach",
     copy:"Kopieren",close:"Schließen",
     dur:["1 Std","4 Std","8 Std","1 Tag","2 Tage","5 Tage","7 Tage"],
     errNoCryptoEnc:"Verschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
     errNoCryptoDec:"Entschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
+    errNoCryptoGen:"Generierung des Geheimnisses nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
     errNetwork:"Netzwerkfehler — Server nicht erreichbar",
     errDecrypt:"Entschlüsselung fehlgeschlagen — falscher oder beschädigter Schlüssel",
     errKeyMissing:"dieser Link ist unvollständig — der Schlüssel zum Entschlüsseln (der Teil nach #) fehlt",
@@ -580,13 +591,14 @@ try{
     hHttps:"<strong>HTTPS erforderlich:</strong> Die Web Crypto API funktioniert nur in einem sicheren Kontext, daher muss OnceVault über HTTPS ausgeliefert werden (oder localhost zum Testen).",
     hFree:"OnceVault ist freie Software",
     hLicRest:", veröffentlicht unter der MIT-Lizenz. Copyright © 2026 Günther Mair. Vollständig mit LLM-Werkzeugen erstellt (Anthropic-Claude- und MiniMax-Modelle)."},
-  el:{name:"Ελληνικά",secret:"Μυστικό",encrypt:"Κρυπτογράφηση",lang:"Γλώσσα",
+  el:{name:"Ελληνικά",secret:"Μυστικό",encrypt:"Κρυπτογράφηση",generate:"Δημιουργία μυστικού",lang:"Γλώσσα",
     theme:"Θέμα: σύστημα → σκούρο → ανοιχτό",help:"Σχετικά με το OnceVault",
     eyeShow:"Εμφάνιση μυστικού",eyeHide:"Απόκρυψη μυστικού",durAria:"Λήγει μετά από",
     copy:"Αντιγραφή",close:"Κλείσιμο",
     dur:["1 ώ","4 ώ","8 ώ","1 ημ","2 ημ","5 ημ","7 ημ"],
     errNoCryptoEnc:"η κρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
     errNoCryptoDec:"η αποκρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
+    errNoCryptoGen:"η δημιουργία μυστικού δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
     errNetwork:"σφάλμα δικτύου — αδύνατη η επικοινωνία με τον διακομιστή",
     errDecrypt:"η αποκρυπτογράφηση απέτυχε — λάθος ή κατεστραμμένο κλειδί",
     errKeyMissing:"αυτός ο σύνδεσμος είναι ελλιπής — λείπει το κλειδί αποκρυπτογράφησης (το τμήμα μετά το #)",
@@ -610,13 +622,14 @@ try{
     hHttps:"<strong>Απαιτείται HTTPS:</strong> το Web Crypto API λειτουργεί μόνο σε ασφαλές περιβάλλον, οπότε το OnceVault πρέπει να σερβίρεται μέσω HTTPS (ή localhost για δοκιμές).",
     hFree:"Το OnceVault είναι ελεύθερο λογισμικό",
     hLicRest:", υπό την άδεια MIT. Copyright © 2026 Günther Mair. Κατασκευασμένο εξ ολοκλήρου με εργαλεία LLM (μοντέλα Anthropic Claude και MiniMax)."},
-  es:{name:"Español",secret:"Secreto",encrypt:"Cifrar",lang:"Idioma",
+  es:{name:"Español",secret:"Secreto",encrypt:"Cifrar",generate:"Generar secreto",lang:"Idioma",
     theme:"Tema: sistema → oscuro → claro",help:"Acerca de OnceVault",
     eyeShow:"Mostrar el secreto",eyeHide:"Ocultar el secreto",durAria:"Caduca tras",
     copy:"Copiar",close:"Cerrar",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"cifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
     errNoCryptoDec:"descifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
+    errNoCryptoGen:"generación de secreto no disponible — OnceVault requiere HTTPS (contexto seguro)",
     errNetwork:"error de red — no se pudo contactar con el servidor",
     errDecrypt:"fallo al descifrar — clave errónea o dañada",
     errKeyMissing:"este enlace está incompleto — falta la clave de descifrado (la parte después de #)",
@@ -640,13 +653,14 @@ try{
     hHttps:"<strong>HTTPS obligatorio:</strong> la Web Crypto API solo funciona en un contexto seguro, por lo que OnceVault debe servirse por HTTPS (o localhost para pruebas).",
     hFree:"OnceVault es software libre",
     hLicRest:", publicado bajo la licencia MIT. Copyright © 2026 Günther Mair. Construido íntegramente con herramientas LLM (modelos Anthropic Claude y MiniMax)."},
-  et:{name:"Eesti",secret:"Saladus",encrypt:"Krüpteeri",lang:"Keel",
+  et:{name:"Eesti",secret:"Saladus",encrypt:"Krüpteeri",generate:"Loo saladus",lang:"Keel",
     theme:"Teema: süsteem → tume → hele",help:"OnceVaultist",
     eyeShow:"Näita saladust",eyeHide:"Peida saladus",durAria:"Aegub pärast",
     copy:"Kopeeri",close:"Sulge",
     dur:["1 t","4 t","8 t","1 p","2 p","5 p","7 p"],
     errNoCryptoEnc:"krüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
     errNoCryptoDec:"dekrüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
+    errNoCryptoGen:"saladuse loomine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
     errNetwork:"võrguviga — serveriga ei saadud ühendust",
     errDecrypt:"dekrüpteerimine ebaõnnestus — vale või rikutud võti",
     errKeyMissing:"see link on poolik — dekrüpteerimisvõti (osa pärast #) puudub",
@@ -670,13 +684,14 @@ try{
     hHttps:"<strong>Vajalik on HTTPS:</strong> Web Crypto API töötab ainult turvalises kontekstis, seega tuleb OnceVault serveerida üle HTTPS-i (või testimiseks localhostis).",
     hFree:"OnceVault on vaba tarkvara",
     hLicRest:", välja antud MIT-litsentsi all. Copyright © 2026 Günther Mair. Loodud täielikult LLM-tööriistadega (Anthropic Claude'i ja MiniMaxi mudelid)."},
-  fi:{name:"Suomi",secret:"Salaisuus",encrypt:"Salaa",lang:"Kieli",
+  fi:{name:"Suomi",secret:"Salaisuus",encrypt:"Salaa",generate:"Luo salaisuus",lang:"Kieli",
     theme:"Teema: järjestelmä → tumma → vaalea",help:"Tietoja OnceVaultista",
     eyeShow:"Näytä salaisuus",eyeHide:"Piilota salaisuus",durAria:"Vanhenee",
     copy:"Kopioi",close:"Sulje",
     dur:["1 t","4 t","8 t","1 pv","2 pv","5 pv","7 pv"],
     errNoCryptoEnc:"salaus ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
     errNoCryptoDec:"salauksen purku ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
+    errNoCryptoGen:"salaisuuden luonti ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
     errNetwork:"verkkovirhe — palvelimeen ei saatu yhteyttä",
     errDecrypt:"salauksen purku epäonnistui — väärä tai vioittunut avain",
     errKeyMissing:"tämä linkki on epätäydellinen — purkuavain (#-merkin jälkeinen osa) puuttuu",
@@ -700,13 +715,14 @@ try{
     hHttps:"<strong>HTTPS vaaditaan:</strong> Web Crypto API toimii vain suojatussa kontekstissa, joten OnceVault on tarjottava HTTPS:n yli (tai localhostissa testausta varten).",
     hFree:"OnceVault on vapaa ohjelmisto",
     hLicRest:", julkaistu MIT-lisenssillä. Copyright © 2026 Günther Mair. Rakennettu kokonaan LLM-työkaluilla (Anthropic Claude- ja MiniMax-mallit)."},
-  fr:{name:"Français",secret:"Secret",encrypt:"Chiffrer",lang:"Langue",
+  fr:{name:"Français",secret:"Secret",encrypt:"Chiffrer",generate:"Générer un secret",lang:"Langue",
     theme:"Thème : système → sombre → clair",help:"À propos d'OnceVault",
     eyeShow:"Afficher le secret",eyeHide:"Masquer le secret",durAria:"Expire après",
     copy:"Copier",close:"Fermer",
     dur:["1 h","4 h","8 h","1 j","2 j","5 j","7 j"],
     errNoCryptoEnc:"chiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
     errNoCryptoDec:"déchiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
+    errNoCryptoGen:"génération de secret indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
     errNetwork:"erreur réseau — impossible de joindre le serveur",
     errDecrypt:"échec du déchiffrement — clé erronée ou corrompue",
     errKeyMissing:"ce lien est incomplet — la clé de déchiffrement (la partie après #) est manquante",
@@ -730,13 +746,14 @@ try{
     hHttps:"<strong>HTTPS requis :</strong> l'API Web Crypto ne fonctionne que dans un contexte sécurisé, OnceVault doit donc être servi via HTTPS (ou localhost pour les tests).",
     hFree:"OnceVault est un logiciel libre",
     hLicRest:", publié sous licence MIT. Copyright © 2026 Günther Mair. Entièrement construit avec des outils LLM (modèles Anthropic Claude et MiniMax)."},
-  ga:{name:"Gaeilge",secret:"Rún",encrypt:"Criptigh",lang:"Teanga",
+  ga:{name:"Gaeilge",secret:"Rún",encrypt:"Criptigh",generate:"Gin rún",lang:"Teanga",
     theme:"Téama: córas → dorcha → geal",help:"Maidir le OnceVault",
     eyeShow:"Taispeáin an rún",eyeHide:"Folaigh an rún",durAria:"Éagann tar éis",
     copy:"Cóipeáil",close:"Dún",
     dur:["1 u","4 u","8 u","1 lá","2 lá","5 lá","7 lá"],
     errNoCryptoEnc:"níl criptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
     errNoCryptoDec:"níl díchriptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
+    errNoCryptoGen:"níl giniúint rúin ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
     errNetwork:"earráid líonra — níorbh fhéidir an freastalaí a shroicheadh",
     errDecrypt:"theip ar an díchriptiú — eochair mhícheart nó truaillithe",
     errKeyMissing:"tá an nasc seo neamhiomlán — tá an eochair díchriptithe (an chuid i ndiaidh #) ar iarraidh",
@@ -760,13 +777,14 @@ try{
     hHttps:"<strong>HTTPS de dhíth:</strong> ní oibríonn an Web Crypto API ach i gcomhthéacs slán, mar sin ní mór OnceVault a sholáthar thar HTTPS (nó localhost le haghaidh tástála).",
     hFree:"Is saorbhogearraí é OnceVault",
     hLicRest:", eisithe faoin gceadúnas MIT. Copyright © 2026 Günther Mair. Tógtha go hiomlán le huirlisí LLM (samhlacha Anthropic Claude agus MiniMax)."},
-  hr:{name:"Hrvatski",secret:"Tajna",encrypt:"Šifriraj",lang:"Jezik",
+  hr:{name:"Hrvatski",secret:"Tajna",encrypt:"Šifriraj",generate:"Generiraj tajnu",lang:"Jezik",
     theme:"Tema: sustav → tamna → svijetla",help:"O OnceVaultu",
     eyeShow:"Prikaži tajnu",eyeHide:"Sakrij tajnu",durAria:"Istječe nakon",
     copy:"Kopiraj",close:"Zatvori",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
     errNoCryptoDec:"dešifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
+    errNoCryptoGen:"generiranje tajne nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
     errNetwork:"mrežna pogreška — poslužitelj nije dostupan",
     errDecrypt:"dešifriranje nije uspjelo — pogrešan ili oštećen ključ",
     errKeyMissing:"ova poveznica je nepotpuna — nedostaje ključ za dešifriranje (dio nakon #)",
@@ -790,13 +808,14 @@ try{
     hHttps:"<strong>Potreban je HTTPS:</strong> Web Crypto API radi samo u sigurnom kontekstu, pa OnceVault mora biti poslužen preko HTTPS-a (ili localhosta za testiranje).",
     hFree:"OnceVault je slobodan softver",
     hLicRest:", objavljen pod licencijom MIT. Copyright © 2026 Günther Mair. U cijelosti izrađen LLM alatima (modeli Anthropic Claude i MiniMax)."},
-  hu:{name:"Magyar",secret:"Titok",encrypt:"Titkosítás",lang:"Nyelv",
+  hu:{name:"Magyar",secret:"Titok",encrypt:"Titkosítás",generate:"Titok generálása",lang:"Nyelv",
     theme:"Téma: rendszer → sötét → világos",help:"A OnceVaultról",
     eyeShow:"Titok megjelenítése",eyeHide:"Titok elrejtése",durAria:"Lejár ennyi után",
     copy:"Másolás",close:"Bezárás",
     dur:["1 ó","4 ó","8 ó","1 nap","2 nap","5 nap","7 nap"],
     errNoCryptoEnc:"a titkosítás nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
     errNoCryptoDec:"a visszafejtés nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
+    errNoCryptoGen:"a titok generálása nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
     errNetwork:"hálózati hiba — a szerver nem érhető el",
     errDecrypt:"a visszafejtés sikertelen — hibás vagy sérült kulcs",
     errKeyMissing:"ez a hivatkozás hiányos — hiányzik a visszafejtő kulcs (a # utáni rész)",
@@ -820,13 +839,14 @@ try{
     hHttps:"<strong>HTTPS szükséges:</strong> a Web Crypto API csak biztonságos környezetben működik, ezért a OnceVaultot HTTPS-en keresztül kell kiszolgálni (vagy teszteléshez localhoston).",
     hFree:"A OnceVault szabad szoftver",
     hLicRest:", MIT licenc alatt kiadva. Copyright © 2026 Günther Mair. Teljes egészében LLM-eszközökkel készült (Anthropic Claude és MiniMax modellek)."},
-  it:{name:"Italiano",secret:"Segreto",encrypt:"Cifra",lang:"Lingua",
+  it:{name:"Italiano",secret:"Segreto",encrypt:"Cifra",generate:"Genera segreto",lang:"Lingua",
     theme:"Tema: sistema → scuro → chiaro",help:"Informazioni su OnceVault",
     eyeShow:"Mostra il segreto",eyeHide:"Nascondi il segreto",durAria:"Scade dopo",
     copy:"Copia",close:"Chiudi",
     dur:["1 h","4 h","8 h","1 g","2 g","5 g","7 g"],
     errNoCryptoEnc:"cifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
     errNoCryptoDec:"decifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
+    errNoCryptoGen:"generazione di segreto non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
     errNetwork:"errore di rete — impossibile raggiungere il server",
     errDecrypt:"decifratura non riuscita — chiave errata o danneggiata",
     errKeyMissing:"questo link è incompleto — manca la chiave di decifratura (la parte dopo #)",
@@ -850,13 +870,14 @@ try{
     hHttps:"<strong>HTTPS obbligatorio:</strong> la Web Crypto API funziona solo in un contesto sicuro, quindi OnceVault deve essere servito via HTTPS (o localhost per i test).",
     hFree:"OnceVault è software libero",
     hLicRest:", rilasciato con licenza MIT. Copyright © 2026 Günther Mair. Realizzato interamente con strumenti LLM (modelli Anthropic Claude e MiniMax)."},
-  lt:{name:"Lietuvių",secret:"Paslaptis",encrypt:"Šifruoti",lang:"Kalba",
+  lt:{name:"Lietuvių",secret:"Paslaptis",encrypt:"Šifruoti",generate:"Generuoti paslaptį",lang:"Kalba",
     theme:"Tema: sistema → tamsi → šviesi",help:"Apie OnceVault",
     eyeShow:"Rodyti paslaptį",eyeHide:"Slėpti paslaptį",durAria:"Galioja iki",
     copy:"Kopijuoti",close:"Uždaryti",
     dur:["1 val","4 val","8 val","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
     errNoCryptoDec:"iššifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
+    errNoCryptoGen:"paslapties generavimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
     errNetwork:"tinklo klaida — nepavyko pasiekti serverio",
     errDecrypt:"iššifruoti nepavyko — neteisingas arba sugadintas raktas",
     errKeyMissing:"ši nuoroda neišsami — trūksta iššifravimo rakto (dalies po #)",
@@ -880,13 +901,14 @@ try{
     hHttps:"<strong>Būtinas HTTPS:</strong> Web Crypto API veikia tik saugiame kontekste, todėl OnceVault turi būti pasiekiamas per HTTPS (arba localhost testavimui).",
     hFree:"OnceVault yra laisva programinė įranga",
     hLicRest:", išleista pagal MIT licenciją. Copyright © 2026 Günther Mair. Visiškai sukurta LLM įrankiais (Anthropic Claude ir MiniMax modeliai)."},
-  lv:{name:"Latviešu",secret:"Noslēpums",encrypt:"Šifrēt",lang:"Valoda",
+  lv:{name:"Latviešu",secret:"Noslēpums",encrypt:"Šifrēt",generate:"Ģenerēt noslēpumu",lang:"Valoda",
     theme:"Motīvs: sistēma → tumšs → gaišs",help:"Par OnceVault",
     eyeShow:"Rādīt noslēpumu",eyeHide:"Slēpt noslēpumu",durAria:"Beidzas pēc",
     copy:"Kopēt",close:"Aizvērt",
     dur:["1 st","4 st","8 st","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
     errNoCryptoDec:"atšifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
+    errNoCryptoGen:"noslēpuma ģenerēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
     errNetwork:"tīkla kļūda — serveris nav sasniedzams",
     errDecrypt:"atšifrēšana neizdevās — nepareiza vai bojāta atslēga",
     errKeyMissing:"šī saite ir nepilnīga — trūkst atšifrēšanas atslēgas (daļas aiz #)",
@@ -910,13 +932,14 @@ try{
     hHttps:"<strong>Nepieciešams HTTPS:</strong> Web Crypto API darbojas tikai drošā kontekstā, tāpēc OnceVault jāpasniedz caur HTTPS (vai localhost testēšanai).",
     hFree:"OnceVault ir brīvā programmatūra",
     hLicRest:", izdota ar MIT licenci. Copyright © 2026 Günther Mair. Pilnībā izveidots ar LLM rīkiem (Anthropic Claude un MiniMax modeļi)."},
-  mt:{name:"Malti",secret:"Sigriet",encrypt:"Ikkriptja",lang:"Lingwa",
+  mt:{name:"Malti",secret:"Sigriet",encrypt:"Ikkriptja",generate:"Iġġenera sigriet",lang:"Lingwa",
     theme:"Tema: sistema → skura → ċara",help:"Dwar OnceVault",
     eyeShow:"Uri s-sigriet",eyeHide:"Aħbi s-sigriet",durAria:"Jiskadi wara",
     copy:"Ikkopja",close:"Agħlaq",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"il-kriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
     errNoCryptoDec:"id-dekriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
+    errNoCryptoGen:"il-ġenerazzjoni tas-sigriet mhix disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
     errNetwork:"żball tan-netwerk — is-server ma setax jintlaħaq",
     errDecrypt:"id-dekriptaġġ falla — ċavetta ħażina jew korrotta",
     errKeyMissing:"din il-ħolqa mhijiex kompluta — iċ-ċavetta tad-dekriptaġġ (il-parti wara #) hija nieqsa",
@@ -940,13 +963,14 @@ try{
     hHttps:"<strong>Meħtieġ HTTPS:</strong> il-Web Crypto API taħdem biss f'kuntest sigur, għalhekk OnceVault irid jiġi servut fuq HTTPS (jew localhost għall-ittestjar).",
     hFree:"OnceVault huwa softwer ħieles",
     hLicRest:", maħruġ taħt il-liċenzja MIT. Copyright © 2026 Günther Mair. Mibni kompletament b'għodod LLM (mudelli Anthropic Claude u MiniMax)."},
-  nl:{name:"Nederlands",secret:"Geheim",encrypt:"Versleutelen",lang:"Taal",
+  nl:{name:"Nederlands",secret:"Geheim",encrypt:"Versleutelen",generate:"Geheim genereren",lang:"Taal",
     theme:"Thema: systeem → donker → licht",help:"Over OnceVault",
     eyeShow:"Geheim tonen",eyeHide:"Geheim verbergen",durAria:"Verloopt na",
     copy:"Kopiëren",close:"Sluiten",
     dur:["1 u","4 u","8 u","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"versleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
     errNoCryptoDec:"ontsleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
+    errNoCryptoGen:"genereren van geheim niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
     errNetwork:"netwerkfout — de server is niet bereikbaar",
     errDecrypt:"ontsleutelen mislukt — verkeerde of beschadigde sleutel",
     errKeyMissing:"deze link is onvolledig — de ontsleutelingssleutel (het deel na #) ontbreekt",
@@ -970,13 +994,14 @@ try{
     hHttps:"<strong>HTTPS vereist:</strong> de Web Crypto API werkt alleen in een beveiligde context, dus OnceVault moet via HTTPS worden aangeboden (of localhost om te testen).",
     hFree:"OnceVault is vrije software",
     hLicRest:", uitgebracht onder de MIT-licentie. Copyright © 2026 Günther Mair. Volledig gebouwd met LLM-gereedschap (Anthropic Claude- en MiniMax-modellen)."},
-  pl:{name:"Polski",secret:"Sekret",encrypt:"Zaszyfruj",lang:"Język",
+  pl:{name:"Polski",secret:"Sekret",encrypt:"Zaszyfruj",generate:"Wygeneruj sekret",lang:"Język",
     theme:"Motyw: systemowy → ciemny → jasny",help:"O OnceVault",
     eyeShow:"Pokaż sekret",eyeHide:"Ukryj sekret",durAria:"Wygasa po",
     copy:"Kopiuj",close:"Zamknij",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"szyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
     errNoCryptoDec:"odszyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
+    errNoCryptoGen:"generowanie sekretu niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
     errNetwork:"błąd sieci — nie można połączyć się z serwerem",
     errDecrypt:"odszyfrowanie nie powiodło się — błędny lub uszkodzony klucz",
     errKeyMissing:"ten link jest niekompletny — brakuje klucza deszyfrującego (części po #)",
@@ -1000,13 +1025,14 @@ try{
     hHttps:"<strong>Wymagany HTTPS:</strong> Web Crypto API działa tylko w bezpiecznym kontekście, więc OnceVault musi być serwowany przez HTTPS (lub localhost do testów).",
     hFree:"OnceVault jest wolnym oprogramowaniem",
     hLicRest:", wydanym na licencji MIT. Copyright © 2026 Günther Mair. Zbudowany w całości narzędziami LLM (modele Anthropic Claude i MiniMax)."},
-  pt:{name:"Português",secret:"Segredo",encrypt:"Cifrar",lang:"Idioma",
+  pt:{name:"Português",secret:"Segredo",encrypt:"Cifrar",generate:"Gerar segredo",lang:"Idioma",
     theme:"Tema: sistema → escuro → claro",help:"Sobre o OnceVault",
     eyeShow:"Mostrar o segredo",eyeHide:"Ocultar o segredo",durAria:"Expira após",
     copy:"Copiar",close:"Fechar",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"cifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
     errNoCryptoDec:"decifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
+    errNoCryptoGen:"geração de segredo indisponível — o OnceVault requer HTTPS (contexto seguro)",
     errNetwork:"erro de rede — não foi possível contactar o servidor",
     errDecrypt:"falha ao decifrar — chave errada ou corrompida",
     errKeyMissing:"este link está incompleto — falta a chave de decifração (a parte depois de #)",
@@ -1030,13 +1056,14 @@ try{
     hHttps:"<strong>HTTPS obrigatório:</strong> a Web Crypto API só funciona num contexto seguro, pelo que o OnceVault tem de ser servido por HTTPS (ou localhost para testes).",
     hFree:"O OnceVault é software livre",
     hLicRest:", publicado sob a licença MIT. Copyright © 2026 Günther Mair. Construído inteiramente com ferramentas LLM (modelos Anthropic Claude e MiniMax)."},
-  ro:{name:"Română",secret:"Secret",encrypt:"Criptează",lang:"Limbă",
+  ro:{name:"Română",secret:"Secret",encrypt:"Criptează",generate:"Generează secret",lang:"Limbă",
     theme:"Temă: sistem → întunecată → luminoasă",help:"Despre OnceVault",
     eyeShow:"Arată secretul",eyeHide:"Ascunde secretul",durAria:"Expiră după",
     copy:"Copiază",close:"Închide",
     dur:["1 h","4 h","8 h","1 zi","2 zile","5 zile","7 zile"],
     errNoCryptoEnc:"criptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
     errNoCryptoDec:"decriptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
+    errNoCryptoGen:"generarea secretului nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
     errNetwork:"eroare de rețea — serverul nu a putut fi contactat",
     errDecrypt:"decriptarea a eșuat — cheie greșită sau coruptă",
     errKeyMissing:"acest link este incomplet — lipsește cheia de decriptare (partea de după #)",
@@ -1060,13 +1087,14 @@ try{
     hHttps:"<strong>HTTPS obligatoriu:</strong> Web Crypto API funcționează doar într-un context securizat, deci OnceVault trebuie servit prin HTTPS (sau localhost pentru teste).",
     hFree:"OnceVault este software liber",
     hLicRest:", publicat sub licența MIT. Copyright © 2026 Günther Mair. Construit în întregime cu instrumente LLM (modele Anthropic Claude și MiniMax)."},
-  sk:{name:"Slovenčina",secret:"Tajomstvo",encrypt:"Zašifrovať",lang:"Jazyk",
+  sk:{name:"Slovenčina",secret:"Tajomstvo",encrypt:"Zašifrovať",generate:"Vygenerovať tajomstvo",lang:"Jazyk",
     theme:"Motív: systém → tmavý → svetlý",help:"O OnceVault",
     eyeShow:"Zobraziť tajomstvo",eyeHide:"Skryť tajomstvo",durAria:"Vyprší o",
     copy:"Kopírovať",close:"Zavrieť",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNoCryptoDec:"dešifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
+    errNoCryptoGen:"generovanie tajomstva nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNetwork:"chyba siete — server je nedostupný",
     errDecrypt:"dešifrovanie zlyhalo — nesprávny alebo poškodený kľúč",
     errKeyMissing:"tento odkaz je neúplný — chýba dešifrovací kľúč (časť za #)",
@@ -1090,13 +1118,14 @@ try{
     hHttps:"<strong>Vyžaduje sa HTTPS:</strong> Web Crypto API funguje len v zabezpečenom kontexte, OnceVault preto musí bežať cez HTTPS (alebo localhost na testovanie).",
     hFree:"OnceVault je slobodný softvér",
     hLicRest:", vydaný pod licenciou MIT. Copyright © 2026 Günther Mair. Vytvorené výhradne pomocou LLM nástrojov (modely Anthropic Claude a MiniMax)."},
-  sl:{name:"Slovenščina",secret:"Skrivnost",encrypt:"Šifriraj",lang:"Jezik",
+  sl:{name:"Slovenščina",secret:"Skrivnost",encrypt:"Šifriraj",generate:"Ustvari skrivnost",lang:"Jezik",
     theme:"Tema: sistem → temna → svetla",help:"O OnceVaultu",
     eyeShow:"Pokaži skrivnost",eyeHide:"Skrij skrivnost",durAria:"Poteče čez",
     copy:"Kopiraj",close:"Zapri",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
     errNoCryptoDec:"dešifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
+    errNoCryptoGen:"ustvarjanje skrivnosti ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
     errNetwork:"omrežna napaka — strežnik ni dosegljiv",
     errDecrypt:"dešifriranje ni uspelo — napačen ali poškodovan ključ",
     errKeyMissing:"ta povezava je nepopolna — manjka ključ za dešifriranje (del za #)",
@@ -1120,13 +1149,14 @@ try{
     hHttps:"<strong>Zahtevan je HTTPS:</strong> Web Crypto API deluje le v varnem kontekstu, zato mora biti OnceVault na voljo prek HTTPS (ali localhost za testiranje).",
     hFree:"OnceVault je prosta programska oprema",
     hLicRest:", izdana pod licenco MIT. Copyright © 2026 Günther Mair. V celoti izdelano z orodji LLM (modeli Anthropic Claude in MiniMax)."},
-  sv:{name:"Svenska",secret:"Hemlighet",encrypt:"Kryptera",lang:"Språk",
+  sv:{name:"Svenska",secret:"Hemlighet",encrypt:"Kryptera",generate:"Generera hemlighet",lang:"Språk",
     theme:"Tema: system → mörkt → ljust",help:"Om OnceVault",
     eyeShow:"Visa hemlighet",eyeHide:"Dölj hemlighet",durAria:"Upphör efter",
     copy:"Kopiera",close:"Stäng",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"kryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
     errNoCryptoDec:"dekryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
+    errNoCryptoGen:"generering av hemlighet otillgänglig — OnceVault kräver HTTPS (säker kontext)",
     errNetwork:"nätverksfel — servern kunde inte nås",
     errDecrypt:"dekryptering misslyckades — fel eller skadad nyckel",
     errKeyMissing:"denna länk är ofullständig — dekrypteringsnyckeln (delen efter #) saknas",
@@ -1150,13 +1180,14 @@ try{
     hHttps:"<strong>HTTPS krävs:</strong> Web Crypto API fungerar bara i en säker kontext, så OnceVault måste serveras via HTTPS (eller localhost för test).",
     hFree:"OnceVault är fri programvara",
     hLicRest:", utgiven under MIT-licensen. Copyright © 2026 Günther Mair. Helt byggd med LLM-verktyg (Anthropic Claude- och MiniMax-modeller)."},
-  zh:{name:"中文",secret:"秘密",encrypt:"加密",lang:"语言",
+  zh:{name:"中文",secret:"秘密",encrypt:"加密",generate:"生成秘密",lang:"语言",
     theme:"主题：系统 → 深色 → 浅色",help:"关于 OnceVault",
     eyeShow:"显示秘密",eyeHide:"隐藏秘密",durAria:"有效期",
     copy:"复制",close:"关闭",
     dur:["1小时","4小时","8小时","1天","2天","5天","7天"],
     errNoCryptoEnc:"无法加密 — OnceVault 需要 HTTPS（安全上下文）",
     errNoCryptoDec:"无法解密 — OnceVault 需要 HTTPS（安全上下文）",
+    errNoCryptoGen:"无法生成秘密 — OnceVault 需要 HTTPS（安全上下文）",
     errNetwork:"网络错误 — 无法连接服务器",
     errDecrypt:"解密失败 — 密钥错误或已损坏",
     errKeyMissing:"此链接不完整 — 缺少解密密钥（# 后面的部分）",
@@ -1173,7 +1204,7 @@ try{
     hHow:"工作原理",
     hCrypto:"您的秘密在<strong>您的浏览器中</strong>使用 AES-256-GCM 加密，之后才会有任何数据离开您的设备。服务器仅在随机 ID 下存储密文，并附带您选择的有效期（1 小时至 7 天）。解密密钥<strong>仅</strong>存在于链接的 <code>#fragment</code> 部分，浏览器绝不会将其发送给任何服务器 — 即使 OnceVault 想读取您的秘密也无能为力。第一位打开链接的接收者获得秘密；密文在同一时刻被删除。过期的秘密将在未被读取的情况下删除。",
     hDur:"<strong>有效期：</strong>1 小时、4 小时、8 小时、1 天、2 天、5 天或 7 天。未及时取回的内容将在未读状态下删除。",
-    hOnce:"<strong>阅后即焚：</strong>首次打开链接会以原子方式取回并删除密文。之后任何人再打开同一链接 — 包括您自己 — 只会看到错误，绝不会看到秘密。",
+    hOnce:"<strong>一次性阅读：</strong>首次打开链接会以原子方式取回并删除密文。之后任何人再打开同一链接 — 包括您自己 — 只会看到错误，绝不会看到秘密。",
     legendY:"黄色 — 您的分享链接，可复制并发送。",
     legendG:"绿色 — 为您解密的秘密，仅显示一次。",
     legendR:"红色 — 错误：已被取走、已过期或密钥无效。",
@@ -1224,6 +1255,7 @@ try{
     input.placeholder=tr('secret');
     input.setAttribute('aria-label',tr('secret'));
     encBtn.textContent=tr('encrypt');
+    genBtn.textContent=tr('generate');
     themeBtn.title=tr('theme');
     themeBtn.setAttribute('aria-label',tr('theme'));
     helpBtn.title=tr('help');
@@ -1233,6 +1265,7 @@ try{
     var dur=tr('dur');
     for(var i=0;i<durationSel.options.length;i++) durationSel.options[i].textContent=dur[i];
     copyBtn.title=tr('copy'); copyBtn.setAttribute('aria-label',tr('copy'));
+    copyInBtn.title=tr('copy'); copyInBtn.setAttribute('aria-label',tr('copy'));
     closeBtn.title=tr('close'); closeBtn.setAttribute('aria-label',tr('close'));
     dlgClose.title=tr('close'); dlgClose.setAttribute('aria-label',tr('close'));
     var n=document.querySelectorAll('[data-i18n]');
@@ -1291,6 +1324,17 @@ try{
     input.focus();
   });
 
+  /* in-pill copy: clipboard gets the real value (dots live only in #mask);
+     no-op on empty input, same as encrypt */
+  copyInBtn.addEventListener('click',function(){
+    if(!input.value) return;
+    navigator.clipboard.writeText(input.value).then(function(){
+      iCopyIn.hidden=true; iCheckIn.hidden=false;
+      setTimeout(function(){ iCopyIn.hidden=false; iCheckIn.hidden=true; },1200);
+    }).catch(function(){});
+    input.focus();
+  });
+
   /* renderMask mirrors the value into #mask as one dot per character, newlines
      kept — so the masked view shows the real line structure without plaintext. */
   function renderMask(){
@@ -1329,6 +1373,41 @@ try{
   helpBtn.addEventListener('click',function(){ helpDlg.showModal(); });
   dlgClose.addEventListener('click',function(){ helpDlg.close(); });
   helpDlg.addEventListener('close',function(){ input.focus(); });
+
+  /* ---- secret generator: 16 chars from a curated charset, at least one of each class ----
+     Rejection sampling keeps the modulo fair (bytes >= floor(256/n)*n are dropped);
+     Fisher-Yates shuffle prevents the four required characters from pinning to the head. */
+  var GEN_UPPER="ABCDEFGHJKLMNPQRSTUVWXYZ",   /* 24 — exclude I, O */
+      GEN_LOWER="abcdefghijkmnopqrstuvwxyz",   /* 25 — exclude l */
+      GEN_DIGIT="23456789",                    /*  8 — exclude 0, 1 */
+      GEN_SPECIAL="-_.",                       /*  3 */
+      GEN_FULL=GEN_UPPER+GEN_LOWER+GEN_DIGIT+GEN_SPECIAL; /* 60 */
+  function genUniform(n){
+    var limit=Math.floor(256/n)*n;
+    var b=new Uint8Array(1);
+    while(true){ crypto.getRandomValues(b); if(b[0]<limit) return b[0]%n; }
+  }
+  function genPickChar(set){ return set[genUniform(set.length)]; }
+  function generateSecret(){
+    var chars=[genPickChar(GEN_UPPER),genPickChar(GEN_LOWER),genPickChar(GEN_DIGIT),genPickChar(GEN_SPECIAL)];
+    for(var i=4;i<16;i++) chars.push(genPickChar(GEN_FULL));
+    for(var k=chars.length-1;k>0;k--){
+      var j=genUniform(k+1);
+      var t=chars[k]; chars[k]=chars[j]; chars[j]=t;
+    }
+    return chars.join('');
+  }
+  genBtn.addEventListener('click',function(){
+    if(busy) return;                  /* an encrypt is mid-flight and reads input.value async — don't swap its plaintext */
+    if(!window.crypto||!crypto.getRandomValues){
+      showOutput('error',tr('errNoCryptoGen'));
+      return;
+    }
+    input.value=generateSecret();
+    autosize();
+    renderMask();
+    input.focus();
+  });
 
   /* ---- encrypt flow ----
      SECURITY INVARIANT: the plaintext and the key NEVER appear in any request.
