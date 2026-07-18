@@ -118,6 +118,14 @@ main{
   margin-bottom:30px;
   user-select:none;
 }
+.wm-once{
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--muted) 15%, transparent),
+    var(--muted));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
 
 /* ---- pill input row ---- */
 form{
@@ -287,7 +295,7 @@ dialog li{margin-bottom:4px}
 </nav>
 
 <main>
-  <h1 class="wordmark">OnceVault</h1>
+  <h1 class="wordmark"><span class="wm-once">Once</span>Vault</h1>
 
   <form id="form" autocomplete="off">
     <div class="pill">
