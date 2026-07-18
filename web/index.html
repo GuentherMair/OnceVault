@@ -450,12 +450,13 @@ try{
     if(THEMES.indexOf(t)>=0) theme=t;
   }catch(e){}
   document.documentElement.dataset.theme=theme;
-  themeBtn.addEventListener('click',function(){
+  function cycleTheme(){
     theme=THEMES[(THEMES.indexOf(theme)+1)%THEMES.length];
     document.documentElement.dataset.theme=theme;
     try{ localStorage.setItem('oncevault-theme',theme); }catch(e){}
     input.focus();
-  });
+  }
+  themeBtn.addEventListener('click',cycleTheme);
 
   /* ---- autofill prevention: randomized field name, native submit prevented below ----
      The Math.random fallback is for this NON-crypto cosmetic use only — never
@@ -1377,14 +1378,15 @@ try{
 
   /* in-pill copy: clipboard gets the real value (dots live only in #mask);
      no-op on empty input, same as encrypt */
-  copyInBtn.addEventListener('click',function(){
+  function copyInputAll(){
     if(!input.value) return;
     navigator.clipboard.writeText(input.value).then(function(){
       iCopyIn.hidden=true; iCheckIn.hidden=false;
       setTimeout(function(){ iCopyIn.hidden=false; iCheckIn.hidden=true; },1200);
     }).catch(function(){});
     input.focus();
-  });
+  }
+  copyInBtn.addEventListener('click',copyInputAll);
 
   /* The mask dot. With the embedded 'OnceVault Disc' font active, EVERY
      character — '•' included — renders as the same fixed-advance disc, so the
@@ -1480,9 +1482,38 @@ try{
   });
 
   /* ENTER submits (as the old single-line input did); ALT+ENTER inserts a
-     newline, and so does SHIFT+ENTER (near-universal muscle memory) */
+     newline, and so does SHIFT+ENTER (near-universal muscle memory).
+     Shortcut bindings (active while the input is focused):
+       F1                       open help
+       Cmd/Ctrl-G               generate a random secret
+       Cmd/Ctrl-Shift-C         copy full input to clipboard (overrides browser reopen-tab on the same combo for F1/T)
+       Cmd/Ctrl-Shift-T         cycle theme (system → dark → light → system)
+     Modifier key: metaKey (Cmd on macOS) OR ctrlKey, so both platforms work. */
   input.addEventListener('keydown',function(e){
-    if(e.key!=='Enter'||e.isComposing) return;
+    if(e.isComposing) return;
+    var mod=(e.metaKey||e.ctrlKey)&&!e.altKey;
+    if(e.key==='F1'&&!mod&&!e.shiftKey){
+      e.preventDefault();
+      if(!helpDlg.open) helpDlg.showModal();
+      return;
+    }
+    if(e.key==='g'&&!e.shiftKey&&mod){
+      e.preventDefault();
+      if(e.repeat) return;
+      doGenerate();
+      return;
+    }
+    if(e.key==='C'&&e.shiftKey&&mod){
+      e.preventDefault();
+      copyInputAll();
+      return;
+    }
+    if(e.key==='T'&&e.shiftKey&&mod){
+      e.preventDefault();             /* override browser reopen-closed-tab */
+      cycleTheme();
+      return;
+    }
+    if(e.key!=='Enter') return;
     e.preventDefault();
     if(e.altKey||e.shiftKey){
       input.setRangeText('\n',input.selectionStart,input.selectionEnd,'end');
@@ -1523,7 +1554,7 @@ try{
     }
     return chars.join('');
   }
-  genBtn.addEventListener('click',function(){
+  function doGenerate(){
     if(busy) return;                  /* an encrypt is mid-flight and reads input.value async — don't swap its plaintext */
     if(!window.crypto||!crypto.getRandomValues){
       showOutput('error',tr('errNoCryptoGen'));
@@ -1532,7 +1563,8 @@ try{
     input.value=generateSecret();
     relayout();
     input.focus();
-  });
+  }
+  genBtn.addEventListener('click',doGenerate);
 
   /* ---- encrypt flow ----
      SECURITY INVARIANT: the plaintext and the key NEVER appear in any request.

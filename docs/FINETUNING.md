@@ -78,3 +78,22 @@ help-dialog texts in all 25 languages, documentation, backend identifiers, and
 the 404 wire string, which is now `secret expired or was already retrieved`
 (contract §0.2 amended accordingly). Only the verbatim historical records
 (`INITIAL_REQUEST.md`, `GRILLING.md`) keep their original wording.
+
+Keyboard shortcuts (2026-07-18, v1.0.4), binding: the input field responds to
+the following keys while focused; existing button actions must remain
+available for mouse / touch users, and the shortcuts must never consume a
+native browser shortcut the user has muscle memory for (no Ctrl-N / Ctrl-D /
+Ctrl-H / Ctrl-L / Ctrl-C overrides).
+
+- `F1` — open the help dialog
+- `Cmd/Ctrl-G` — generate a random secret (same body as the Generate button)
+- `Cmd/Ctrl-Shift-C` — copy the full input value to the clipboard (same body
+  as the in-pill copy button; selection-copy via native Ctrl/Cmd-C is
+  preserved)
+- `Cmd/Ctrl-Shift-T` — cycle the theme (same body as the theme button;
+  overrides the browser reopen-closed-tab shortcut on the same combo)
+
+The modifier key is `metaKey || ctrlKey` so macOS users press `Cmd` and
+everyone else presses `Ctrl`. Generate is suppressed on key-repeat (held key
+must not overwrite the input). The `isComposing` IME guard is preserved, so
+shortcuts never fire mid-IME.

@@ -5,6 +5,26 @@ All notable changes to OnceVault are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-07-18
+
+### Added
+
+- Keyboard shortcuts, active while the input field is focused:
+  - `F1` opens the help dialog (universal Help key, no browser conflict).
+  - `Cmd/Ctrl-G` generates a random secret in the input (same action as the
+    Generate button); held-key repeat is suppressed to avoid overwriting.
+  - `Cmd/Ctrl-Shift-C` copies the full input contents to the clipboard
+    (independent of any text selection; uses the same check-mark feedback as
+    the in-pill copy button).
+  - `Cmd/Ctrl-Shift-T` cycles the theme through system → dark → light → system
+    (same action as the theme button); overrides the browser's reopen-closed-
+    tab shortcut on the same combo.
+- The modifier key is `metaKey || ctrlKey`, so macOS users press `Cmd` and
+  everyone else presses `Ctrl` — no per-platform fork needed.
+- The existing Generate, in-pill Copy, and Theme button handlers were lifted
+  into named functions (`doGenerate`, `copyInputAll`, `cycleTheme`) so the
+  click and key bindings call the exact same code path.
+
 ## [1.0.3] - 2026-07-18
 
 ### Added
@@ -163,6 +183,7 @@ Initial release.
 - MIT License; SPDX headers in all source files; provenance note — built entirely
   with LLM tooling (Anthropic Claude and MiniMax models).
 
+[1.0.4]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.4
 [1.0.3]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.3
 [1.0.2]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.2
 [1.0.1]: https://github.com/GuentherMair/OnceVault/releases/tag/v1.0.1
