@@ -44,12 +44,17 @@ Single Go binary, one self-contained HTML page, your choice of sqlite, redis, My
 or PostgreSQL. See [INSTALL.md](INSTALL.md) for build, configuration, database setup,
 systemd, cron cleanup, and reverse-proxy examples.
 
+Build the binary with at least one driver tag, e.g. `-tags driver_sqlite` or
+`-tags driver_all`; see [INSTALL.md §7](INSTALL.md#7-build-tags--binary-size)
+for the full tag set and binary sizes.
+
 ## Provenance
 
 OnceVault was built entirely with LLM tooling (Anthropic Claude and MiniMax models) —
 from a human-written specification, through a staged multi-agent build plan, to review
 and iteration. The full original request and step plans are preserved in
-[docs/](docs/INITIAL_REQUEST.md).
+[docs/](docs/INITIAL_REQUEST.md) and then refined through [GRILLING](docs/GRILLING.md)
+and [FINETUNING](docs/FINETUNING.md).
 
 ## License
 

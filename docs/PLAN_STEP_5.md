@@ -6,7 +6,7 @@ Owns: `server/server.go`, `server/ratelimit.go`, `server/server_test.go`,
 
 ## server/server.go
 
-- `New(cfg *config.Config, st store.Store, index []byte) *Server` (http.Handler). `index` is the frontend bytes (step 6 wires go:embed; tests pass a placeholder).
+- `New(cfg *config.Config, st store.Store, index, favicon []byte) *Server` (http.Handler). `index` is the frontend bytes, `favicon` the embedded ICO bytes (both step 6 wires via `//go:embed`; tests pass placeholder byte slices).
 - Go 1.22 mux: `GET /{$}` → index (text/html; charset=utf-8), `POST /api/secrets`, `GET /api/secrets/{guid}`. Anything else → `404 {"error":"not found"}` JSON. `Cache-Control: no-store` on every response.
 - Middleware order: panic recovery (→ 500 backend-failure JSON, `slog.Error` with stack) → client-IP resolution → blocked-CIDR check (403 on ALL routes) → mux.
 - Client IP per contract 0.5: peer from `r.RemoteAddr`; if peer ∈ `trusted_proxies`, walk `X-Forwarded-For` right→left, first hop outside trusted_proxies wins; all trusted → leftmost; unparsable → peer.

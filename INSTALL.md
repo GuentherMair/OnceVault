@@ -6,7 +6,7 @@ service on Debian/Ubuntu, cron cleanup, and TLS reverse proxying.
 
 ## 1. Build
 
-Requires Go >= 1.22. The frontend is embedded into the binary at build time — there is
+Requires Go >= 1.22 (built and tested with Go 1.26.5). The frontend is embedded into the binary at build time — there is
 nothing else to deploy.
 
 The standard command builds **all four storage drivers**; see [§7 Build tags & binary
@@ -186,7 +186,30 @@ sudo systemctl enable --now oncevault
 systemctl status oncevault
 ```
 
-(For redis/mysql/postgres backends the `ReadWritePaths` line can be dropped.)
+For redis/mysql/postgres backends (no on-disk database), use the same unit but
+drop the `ReadWritePaths` line — the service has nothing to write:
+
+```ini
+[Unit]
+Description=OnceVault zero-knowledge secret sharing
+After=network.target
+
+[Service]
+User=oncevault
+Group=oncevault
+ExecStart=/usr/local/bin/oncevault -config /etc/oncevault/config.yaml serve
+Restart=on-failure
+RestartSec=2
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
+```
 
 ## 5. Cron cleanup
 
@@ -297,7 +320,8 @@ go build -trimpath -ldflags="-s -w" -tags driver_sqlite -o oncevault .
 
 Combine tags for multi-backend hosts: `-tags driver_sqlite,driver_redis`.
 
-Measured sizes on this machine (Go 1.26.5, darwin/arm64, `-trimpath -ldflags="-s -w"`):
+Measured sizes on this machine (Go 1.26.5, darwin/arm64, `-trimpath -ldflags="-s -w"`,
+last regenerated 2026-07-18):
 
 | `-tags …` | Binary size |
 |---|---|

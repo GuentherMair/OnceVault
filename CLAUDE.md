@@ -12,11 +12,11 @@ one embedded HTML page plus embedded favicon, four storage backends.
 OnceVault/
 ├── main.go                   # flags: -config; subcommands: serve (default) | cleanup; go:embed web assets
 ├── config/config.go          # JSON/YAML load, validation, rate-limit default fallback (0 → warn+6000)
-├── store/store.go            # Store interface, sentinel errors, Open() driver dispatch
-├── store/sqlite.go           # modernc.org/sqlite (CGO-free); DELETE…RETURNING w/ DB-side expiry check
-├── store/mysql.go            # go-sql-driver/mysql; SELECT…FOR UPDATE + DELETE in one tx
-├── store/postgres.go         # jackc/pgx (stdlib database/sql mode); DELETE…RETURNING
-├── store/redis.go            # go-redis; SET w/ TTL; atomic GETDEL take
+├── store/store.go            # Store interface, sentinel errors, init()-populated registry, Open() dispatch
+├── store/sqlite.go           # +build driver_sqlite; modernc.org/sqlite (CGO-free); DELETE…RETURNING w/ DB-side expiry check
+├── store/mysql.go            # +build driver_mysql;  go-sql-driver/mysql; SELECT…FOR UPDATE + DELETE in one tx
+├── store/postgres.go         # +build driver_postgres; jackc/pgx (stdlib database/sql mode); DELETE…RETURNING
+├── store/redis.go            # +build driver_redis; go-redis; SET w/ TTL; atomic GETDEL take
 ├── server/server.go          # strict mux, panic recovery, store-error → status mapping, throttled purge
 ├── server/ratelimit.go       # CIDR rules, fixed 1-min window per IP, trusted_proxies resolution
 ├── web/index.html            # ONE self-contained file (HTML+CSS+JS, inline SVG), go:embed
@@ -37,9 +37,12 @@ OnceVault/
 ## Build / test
 
 ```sh
-go build ./... && go vet ./... && go test ./... -count=1
+go build ./... && go vet ./... && go test -tags driver_all ./... -count=1
+# driver_all selects all four storage drivers; without it every test file is
+# silently skipped (they are build-tag-gated). See INSTALL.md §7 for slimmer
+# per-driver binaries.
 gofmt -l .        # must print nothing
-go build -o oncevault . && ./oncevault -config config.yaml   # serve; `cleanup` purges+vacuums
+go build -tags driver_all -o oncevault . && ./oncevault -config config.yaml   # serve; `cleanup` purges+vacuums
 ```
 
 Everything else — API contract with exact error strings, config schema, DB schemas,

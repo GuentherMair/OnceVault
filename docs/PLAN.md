@@ -1,6 +1,6 @@
 # OnceVault — Central Implementation Plan
 
-Derived from [INITIAL_REQUEST.md](INITIAL_REQUEST.md), refined through [GRILLING.md](GRILLING.md).
+Derived from [INITIAL_REQUEST.md](INITIAL_REQUEST.md), refined through [GRILLING.md](GRILLING.md) and [FINETUNING.md](FINETUNING.md).
 Individual build steps: [PLAN_STEP_0](PLAN_STEP_0.md) … [PLAN_STEP_6](PLAN_STEP_6.md).
 
 ## What OnceVault is

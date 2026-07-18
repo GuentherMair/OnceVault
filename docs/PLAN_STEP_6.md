@@ -6,7 +6,7 @@ Owns: `main.go` cleanup branch + go:embed wiring, `config.example.yaml`,
 
 ## Code
 
-- `//go:embed web/index.html` in main.go (or a tiny `web.go`); pass bytes to `server.New`; remove the step-5 placeholder.
+- `//go:embed web/index.html` and `//go:embed web/favicon.ico` in main.go (or a tiny `web.go`); pass both byte slices to `server.New`; remove the step-5 placeholder.
 - `cleanup` subcommand: load config → `store.Open` → `PurgeExpired` (log count) → `Vacuum` → close. Exit 0 on success, 1 with stderr detail on failure. Redis: both are no-ops — log that TTL handles it.
 
 ## config.example.yaml / .json
@@ -23,7 +23,7 @@ pointing to [INSTALL.md](INSTALL.md). Note: intro text is the same content as th
 frontend help dialog — keep them consistent.
 
 ## INSTALL.md
-1. **Build**: go build (Go ≥1.22), resulting single binary.
+1. **Build**: go build (Go ≥1.22, built and tested with Go 1.26.5), resulting single binary.
 2. **Configure**: config file walk-through, key-by-key, both formats.
 3. **Databases** — one sub-section each with setup scripts:
    - sqlite: directory/permissions, DSN, no server needed.
@@ -48,6 +48,12 @@ ciphertext round-trip-decrypts in Go with the kept key; GET again → 404; expir
 oversize body → 400; duration 3 → 400 exact string; burst past a small configured limit
 → 429; `cleanup` subcommand runs clean. Then manual browser checklist from
 [PLAN.md](PLAN.md).
+
+The unit-test suite (`store/sqlite_test.go`, `server/*_test.go`) only exercises the
+sqlite backend. MySQL and PostgreSQL read-once behavior is verified by code review
+against this E2E; the contract invariants (atomic fetch+delete, DB-side `isexpired`)
+are identical across the three SQL backends. See also the note in
+`PLAN_STEP_0.md §0.4` on the mysql `expired` flag scan type.
 
 ## Re-verify before finishing
 All 4 security invariants; `go build ./... && go vet ./... && go test ./...` green;

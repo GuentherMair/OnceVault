@@ -35,9 +35,13 @@ minimalism.
 ## Constraints
 Vanilla JS (one inline `<script>`), one inline `<style>`; no framework, no build step, no
 external URL that the page LOADS anything from (no CDN/fonts/images/fetch targets).
-Sole allowed exception (amendment 2026-07-17): the help-dialog license line links
-`https://github.com/GuentherMair/OnceVault` (`target="_blank" rel="noopener noreferrer"`)
-— a user-click navigation, never fetched by the page itself. Works standalone when
+Allowed exceptions:
+- `<link rel="icon" href="/favicon.ico">` (line 9 of `index.html`) — same-origin, served by
+  `GET /favicon.ico` added in the 2026-07-17 amendment to `PLAN_STEP_0.md §0.2`.
+- The help-dialog license line links `https://github.com/GuentherMair/OnceVault`
+  (`target="_blank" rel="noopener noreferrer"`) — a user-click navigation, never
+  fetched by the page itself.
+Works standalone when
 opened via the Go server later (step 6 embeds it; a static file server suffices for
 manual testing now).
 

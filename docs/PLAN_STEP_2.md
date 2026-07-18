@@ -12,6 +12,9 @@ others — do NOT modify them; replace only the three stub files. go.mod/go.sum 
 - `TakeOnce`: atomic fetch+delete, `isexpired` computed **inside the SQL** (contract 0.4); expired row → delete + `ErrExpired`; no row → `ErrNotFound`.
 - `PurgeExpired`/`Vacuum` per 0.4. `database/sql` with conservative pool settings (sqlite: `SetMaxOpenConns(1)` to avoid SQLITE_BUSY on the file DB).
 - Drivers: `modernc.org/sqlite` (name "sqlite"), `github.com/go-sql-driver/mysql`, `github.com/jackc/pgx/v5/stdlib` (name "pgx").
+- Each driver file MUST start with `//go:build driver_<name> || driver_all` and end with an `init()` that adds its constructor to `store.registry[name]` (see `store/store.go` and the implementation note in `PLAN_STEP_0.md §0.3`). Files compiled in by the tag contribute to `Open()`; files excluded by the tag are absent and `Open()` reports them as "unknown driver".
+- The "registry empty" wording in `Open()`'s error (`<none — rebuild with -tags driver_all or -tags driver_<name>>`) is part of the user-facing contract; document it in `INSTALL.md §7` and do not change the wording without updating both files together.
+- Tests under `store/sqlite_test.go`, `server/server_test.go`, and `server/ratelimit_test.go` carry the same `driver_sqlite || driver_all` tag so the test suite only runs when sqlite is built in. Run with `go test -tags driver_all ./...`.
 
 ## sqlite specifics
 - DSN = file path or `:memory:`; enable WAL + busy_timeout pragmas for file DBs.

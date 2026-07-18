@@ -6,16 +6,17 @@ interface and stubs are pre-committed so wave-1 agents work on disjoint files.
 
 ## 0.1 Product blurb (canonical)
 
-Used verbatim (adapted for medium) by the frontend help dialog AND the README intro:
+Used verbatim (adapted for medium) by the frontend help dialog AND the README intro.
+The README uses the title + the first paragraph; the help dialog follows the title
+with both paragraphs.
 
 > **OnceVault** — share a secret once, then discard it.
-> Your secret is encrypted **in your browser** with AES-256-GCM before anything leaves
-> your machine. The server only ever stores the ciphertext under a random ID with an
-> expiry you pick (1 hour to 7 days). The decryption key travels **only** in the
-> `#fragment` of the share link, which browsers never send to any server — OnceVault
-> couldn't read your secret even if it wanted to. The first person to open the link
-> gets the secret; the ciphertext is deleted in the same moment. Expired secrets are
-> deleted unread.
+>
+> OnceVault lets you safely share a secret with exactly one recipient — it's encrypted
+> in your browser, only one recipient can open it, and the link self-destructs the
+> moment they read it.
+>
+> And if someone else got the link you will know: the message will already be gone!
 
 ## 0.2 HTTP API
 
@@ -106,6 +107,13 @@ Constructors (one per file, replacing the pre-committed stubs):
 `NewSQLite(dsn)`, `NewMySQL(dsn)`, `NewPostgres(dsn)`, `NewRedis(dsn)` — each
 `(*T, error)`, each `*T` satisfies `Store`.
 
+> **Implementation note (build-tag wiring, not part of the frozen interface):**
+> the driver files each carry `//go:build driver_<name> || driver_all` and an
+> `init()` that registers their constructor in `store.registry`. `Open()` looks
+> up the registry (returning an `unknown db driver` error listing the built-in
+> names when the registry is empty). This pattern enables slim per-driver
+> binaries — see `INSTALL.md §7` for the tag set and binary sizes.
+
 ## 0.4 DB schemas / key layout
 
 Timestamps: UTC epoch seconds, `BIGINT`/`INTEGER`. `secret`/`iv` stored as the received
@@ -152,6 +160,11 @@ Take (no DELETE…RETURNING): single tx —
 then `DELETE FROM secrets WHERE guid=?`, commit. Rollback on any error.
 Purge: `… expires <= UNIX_TIMESTAMP()` · Vacuum: `OPTIMIZE TABLE secrets`
 
+The mysql `expired` flag is scanned into `int64` (the MySQL driver returns
+0/1). Postgres uses `bool` directly. Tests only exercise sqlite; mysql and
+postgres read-once behavior is verified by code review (matching the
+E2E in `PLAN_STEP_6.md`, which only runs against sqlite).
+
 redis: key `oncevault:{guid}`, value = JSON `{"secret":"…","iv":"…"}`,
 written with `SET key val EX <duration_seconds> NX` (NX enforces guid uniqueness →
 ErrDuplicate). Take: `GETDEL` (atomic). Absent key → ErrNotFound; **ErrExpired is never
@@ -193,7 +206,7 @@ every rules value is `"0"`, `"-"`, or a positive integer string; `default` ≥ 0
 
 ## 0.7 Cross-cutting rules
 
-- Go module name: `oncevault`. Go ≥ 1.22 (uses `net/http` method+wildcard mux patterns).
+- Go module name: `oncevault`. Go ≥ 1.22 (uses `net/http` method+wildcard mux patterns; built and tested with Go 1.26.5).
 - Allowed dependencies (already in go.mod — do NOT add or upgrade anything, do NOT touch go.mod/go.sum):
   `modernc.org/sqlite`, `github.com/redis/go-redis/v9`, `github.com/go-sql-driver/mysql`,
   `github.com/jackc/pgx/v5` (via `database/sql` stdlib driver), `gopkg.in/yaml.v3`.
