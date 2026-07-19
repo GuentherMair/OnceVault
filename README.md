@@ -52,12 +52,12 @@ for the full tag set and binary sizes.
 
 ```text
 OnceVault/
-|-- main.go                     Entry point for `serve` and `cleanup`. Loads
+|-- main.go                    Entry point for `serve` and `cleanup`. Loads
 |                              configuration, opens the selected store, embeds web
 |                              assets, starts HTTP, and handles graceful shutdown.
-|-- go.mod                      Declares the module, Go version, database drivers,
+|-- go.mod                     Declares the module, Go version, database drivers,
 |                              and YAML dependency.
-|-- go.sum                      Stores checksums for direct and transitive Go
+|-- go.sum                     Stores checksums for direct and transitive Go
 |                              dependencies.
 |
 |-- config.example.yaml        Documented YAML example for HTTP, database, secret
