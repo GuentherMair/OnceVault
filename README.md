@@ -48,6 +48,72 @@ Build the binary with at least one driver tag, e.g. `-tags driver_sqlite` or
 `-tags driver_all`; see [INSTALL.md §7](INSTALL.md#7-build-tags--binary-size)
 for the full tag set and binary sizes.
 
+## Backend structure
+
+```text
+OnceVault/
+|-- main.go                     Entry point for `serve` and `cleanup`. Loads
+|                              configuration, opens the selected store, embeds web
+|                              assets, starts HTTP, and handles graceful shutdown.
+|-- go.mod                      Declares the module, Go version, database drivers,
+|                              and YAML dependency.
+|-- go.sum                      Stores checksums for direct and transitive Go
+|                              dependencies.
+|
+|-- config.example.yaml        Documented YAML example for HTTP, database, secret
+|                              size, proxy, and rate-limit settings.
+|-- config.example.json        JSON equivalent of the runtime configuration example.
+|
+|-- config/
+|   |-- config.go              Defines and loads the JSON or YAML configuration.
+|   |                          Applies defaults, validates values, parses CIDRs, and
+|   |                          resolves per-IP rate-limit rules.
+|   \-- config_test.go         Tests loading, defaults, validation, CIDR parsing,
+|                              warnings, and longest-prefix rate-limit matching.
+|
+|-- server/
+|   |-- server.go              Implements strict routing, middleware, API handlers,
+|   |                          error mapping, GUID generation, and expired-secret
+|   |                          cleanup.
+|   |-- ratelimit.go           Implements fixed one-minute limits keyed by IPv4
+|   |                          address or IPv6 /64 prefix, with stale-entry pruning.
+|   |-- server_test.go         Tests routes, validation, create/take behavior,
+|   |                          middleware, errors, recovery, and cleanup throttling.
+|   \-- ratelimit_test.go      Tests windows, IPv6 bucketing, CIDR overrides,
+|                              blocked clients, trusted proxies, and shared budgets.
+|
+|-- store/
+|   |-- store.go               Defines the Store interface, sentinel errors, driver
+|   |                          registry, and build-tag-dependent driver selection.
+|   |-- sqlite.go              Implements SQLite storage with atomic delete-and-return
+|   |                          retrieval, database-side expiry, purge, and vacuum.
+|   |-- sqlite_test.go         Tests SQLite round trips, read-once atomicity, expiry,
+|   |                          duplicate detection, purging, and vacuuming.
+|   |-- mysql.go               Implements MySQL storage with InnoDB transactions and
+|   |                          SELECT FOR UPDATE followed by deletion.
+|   |-- postgres.go            Implements PostgreSQL storage with DELETE RETURNING for
+|   |                          atomic retrieval and deletion.
+|   \-- redis.go               Implements Redis storage with native TTLs, SETNX, and
+|                              atomic GETDEL; requires Redis 6.2 or later.
+|
+|-- tools/
+|   |-- gen_favicon/
+|   |   \-- main.go            Deterministically generates the multi-resolution
+|   |                          favicon using only the Go standard library.
+|   \-- gen_maskfont/
+|       \-- main.go            Deterministically generates the minimal TrueType mask
+|                              font used by the frontend.
+|
+\-- web/
+    |-- index.html             Embedded frontend asset; contents omitted here.
+    |-- favicon.ico            Generated icon embedded in the binary and served at
+    |                          /favicon.ico.
+    \-- maskfont.ttf           Generated masking font incorporated into the frontend.
+```
+
+Storage implementations are selected at compile time with the `driver_sqlite`,
+`driver_mysql`, `driver_postgres`, `driver_redis`, or `driver_all` build tags.
+
 ## Provenance
 
 OnceVault was built entirely with LLM tooling (Anthropic Claude and MiniMax models) —
