@@ -5,6 +5,29 @@ All notable changes to OnceVault are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-07-20
+
+### Added
+
+- Two new UI languages — Turkish (`tr`, "Türkçe") and Korean (`ko`, "한국어") —
+  bringing the total to 27. Both are listed in the language picker and have full
+  `I18N` entries (placeholder, buttons, ARIA labels, duration labels, client
+  errors, and the entire help dialog including `<strong>`/`<code>` markup).
+  Like the other translations, they are machine-generated and have not yet
+  been reviewed by native speakers — corrections are very welcome.
+- Browser locales such as `tr-TR` and `ko-KR` are now matched automatically via
+  the existing `navigator.languages` lookup, so first-time visitors get the
+  appropriate UI without manually picking it from the globe menu.
+
+### Changed
+
+- Product tag-line rewritten from "share a secret once, then discard it." to
+  "the secret self-destroys once read." — applied to the README H1, the
+  help-dialog title (`hTitle`) in all 27 languages, and the canonical blurb
+  in `docs/PLAN_STEP_0.md` §0.1. The longer help-dialog descriptive
+  paragraphs (`hIntro`, `hQuote`) are unchanged. This is a wording-only
+  release: no behavior, contract, or wire-string changes.
+
 ## [1.0.4] - 2026-07-18
 
 ### Added
@@ -32,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In-pill copy button (first icon, front-left) that copies the typed secret,
   with the same check-mark feedback as the output panel's copy action.
 - "Generate secret" button next to Encrypt, producing a strong random secret
-  directly in the input field; localized in all 25 languages.
+  directly in the input field; localized in all languages.
 - Embedded "OnceVault Disc" mask font (`tools/gen_maskfont`, stdlib-only,
   deterministic, 968 bytes as a data: URI): every Unicode codepoint renders as
   one centered disc at a single fixed advance.

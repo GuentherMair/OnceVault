@@ -14,7 +14,7 @@ requirements:
   - the pill's corner radius stays fixed at the single-line value while the field grows
     (no ballooning fully-rounded corners)
 - the app is internationalized: English (default and fallback), all other official EU
-  languages, and Mandarin Chinese — 25 languages total:
+  languages, Turkish, Korean, and Mandarin Chinese — 27 languages total:
   - simple per-language string storages in JavaScript, UTF-8 encoded
   - the app starts in the browser's default language (first match wins, else English)
   - the language is selectable via the common "world-grid" (globe) icon, displayed as
@@ -74,10 +74,18 @@ all binding:
   and NTP-backwards purge edge are harmless as-is
 
 Wording (2026-07-18), binding: the burn metaphor is removed product-wide —
-help-dialog texts in all 25 languages, documentation, backend identifiers, and
+help-dialog texts in all 27 languages, documentation, backend identifiers, and
 the 404 wire string, which is now `secret expired or was already retrieved`
 (contract §0.2 amended accordingly). Only the verbatim historical records
 (`INITIAL_REQUEST.md`, `GRILLING.md`) keep their original wording.
+
+Wording (2026-07-20), binding: the product tag-line is rewritten from
+"share a secret once, then discard it." to "the secret self-destroys once
+read." — applied product-wide to the help-dialog title (`hTitle`) in all
+27 languages, the README H1, and the canonical blurb in
+`docs/PLAN_STEP_0.md` §0.1. The longer descriptive paragraphs
+(`hIntro`, `hQuote`) are unchanged. The frozen `INITIAL_REQUEST.md` and
+`GRILLING.md` retain their original wording.
 
 Keyboard shortcuts (2026-07-18, v1.0.4), binding: the input field responds to
 the following keys while focused; existing button actions must remain

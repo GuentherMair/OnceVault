@@ -1,4 +1,4 @@
-# OnceVault — share a secret once, then discard it.
+# OnceVault — the secret self-destroys once read.
 
 OnceVault lets you safely share a secret with exactly one recipient — it's encrypted
 in your browser, only one recipient can open it, and the link self-destructs the
