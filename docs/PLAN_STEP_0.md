@@ -10,7 +10,7 @@ Used verbatim (adapted for medium) by the frontend help dialog AND the README in
 The README uses the title + the first paragraph; the help dialog follows the title
 with both paragraphs.
 
-> **OnceVault** — the secret self-destroys once read.
+> **OnceVault** — the message will self-destruct once read.
 >
 > OnceVault lets you safely share a secret with exactly one recipient — it's encrypted
 > in your browser, only one recipient can open it, and the link self-destructs the

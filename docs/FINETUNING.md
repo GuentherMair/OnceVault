@@ -87,6 +87,21 @@ read." — applied product-wide to the help-dialog title (`hTitle`) in all
 (`hIntro`, `hQuote`) are unchanged. The frozen `INITIAL_REQUEST.md` and
 `GRILLING.md` retain their original wording.
 
+Wording (2026-07-20, v1.0.6), binding: the input placeholder and the
+help-dialog introductory sentence shift from "secret" to "message"
+(iconic Mission Impossible "this message will self-destruct" framing) —
+applied product-wide to the input placeholder (`secret` key in all 27
+languages), the textarea's HTML `placeholder` and `aria-label` fallbacks,
+the help-dialog title (`hTitle` in all 27 languages and the HTML
+fallback), the README H1, and the canonical blurb in
+`docs/PLAN_STEP_0.md` §0.1. The longer help-dialog descriptive
+paragraphs (`hIntro`, `hQuote`, `hCrypto`, `hOnce`) and the frozen
+backend wire strings (`srvTaken`, `srvExpired`, `srvTooLarge`,
+`errNoCryptoGen`, etc.) are deliberately left untouched — only the
+placeholder text and the introductory title are reworded in this
+amendment. The frozen `INITIAL_REQUEST.md` and `GRILLING.md` retain
+their original wording.
+
 Keyboard shortcuts (2026-07-18, v1.0.4), binding: the input field responds to
 the following keys while focused; existing button actions must remain
 available for mouse / touch users, and the shortcuts must never consume a

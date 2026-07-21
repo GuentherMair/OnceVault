@@ -5,6 +5,21 @@ All notable changes to OnceVault are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-07-20
+
+### Changed
+
+- Input placeholder and help-dialog introductory sentence shifted from
+  "secret" to "message" (Mission Impossible "this message will
+  self-destruct" framing) — applied to the input placeholder (`secret`
+  key in all 27 languages), the textarea's HTML `placeholder` and
+  `aria-label` fallbacks, the help-dialog title (`hTitle` in all 27
+  languages and the HTML fallback), the README H1, and the canonical
+  blurb in `docs/PLAN_STEP_0.md` §0.1. The longer help-dialog
+  descriptive paragraphs (`hIntro`, `hQuote`, `hCrypto`, `hOnce`) and
+  the frozen backend wire strings are deliberately untouched — only
+  the placeholder and introductory title are reworded.
+
 ## [1.0.5] - 2026-07-20
 
 ### Added
