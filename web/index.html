@@ -276,6 +276,21 @@ html:not(.discfont) .pill textarea:not(.revealed)::selection{
   .out{padding-right:72px}
 }
 
+/* ---- copy toast: transient status pill, bottom-center; reuses the
+   tri-state green/red tokens so it reads as part of the same system ---- */
+#toast{
+  position:fixed;left:50%;bottom:32px;transform:translate(-50%,8px);
+  max-width:min(92%,420px);
+  padding:10px 20px;border-radius:9999px;
+  font-size:14px;text-align:center;
+  background:var(--g-bg);color:var(--g-fg);box-shadow:var(--pill-shadow);
+  opacity:0;pointer-events:none;
+  transition:opacity .15s,transform .15s;
+  z-index:20;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.toast-error{background:var(--r-bg);color:var(--r-fg)}
+
 /* ---- help dialog ---- */
 dialog{
   border:0;border-radius:12px;
@@ -407,6 +422,8 @@ try{
   </div>
 </main>
 
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <dialog id="helpDlg" aria-labelledby="helpTitle">
   <button id="dlgClose" class="iconbtn dlg-close" type="button" title="Close" aria-label="Close help">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -439,7 +456,7 @@ try{
       copyBtn=$('copyBtn'), iCopy=$('iCopy'), iCheck=$('iCheck'), closeBtn=$('closeBtn'),
       copyInBtn=$('copyInBtn'), iCopyIn=$('iCopyIn'), iCheckIn=$('iCheckIn'),
       themeBtn=$('themeBtn'), helpBtn=$('helpBtn'), helpDlg=$('helpDlg'), dlgClose=$('dlgClose'),
-      langBtn=$('langBtn'), langSel=$('langSel');
+      langBtn=$('langBtn'), langSel=$('langSel'), toast=$('toast');
 
   var UUID_RE=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   /* 43 unpadded base64/base64url chars (a 32-byte key), optionally a 44th which may be '=' */
@@ -494,7 +511,7 @@ try{
   en:{name:"English",secret:"Message",encrypt:"Encrypt",generate:"Generate secret",lang:"Language",
     theme:"Theme: system → dark → light",help:"About OnceVault",
     eyeShow:"Show secret",eyeHide:"Hide secret",durAria:"Expires after",
-    copy:"Copy",close:"Close",
+    copy:"Copy",close:"Close",copied:"Copied to clipboard",copyFailed:"Copy failed",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"encryption unavailable — OnceVault requires HTTPS (secure context)",
     errNoCryptoDec:"decryption unavailable — OnceVault requires HTTPS (secure context)",
@@ -525,7 +542,7 @@ try{
   bg:{name:"Български",secret:"Съобщение",encrypt:"Шифровай",generate:"Генерирай тайна",lang:"Език",
     theme:"Тема: системна → тъмна → светла",help:"За OnceVault",
     eyeShow:"Покажи тайната",eyeHide:"Скрий тайната",durAria:"Изтича след",
-    copy:"Копирай",close:"Затвори",
+    copy:"Копирай",close:"Затвори",copied:"Копирано в клипборда",copyFailed:"Копирането не бе успешно",
     dur:["1 ч","4 ч","8 ч","1 д","2 д","5 д","7 д"],
     errNoCryptoEnc:"шифроването не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
     errNoCryptoDec:"дешифрирането не е достъпно — OnceVault изисква HTTPS (защитен контекст)",
@@ -556,7 +573,7 @@ try{
   cs:{name:"Čeština",secret:"Zpráva",encrypt:"Zašifrovat",generate:"Vygenerovat tajemství",lang:"Jazyk",
     theme:"Motiv: systém → tmavý → světlý",help:"O OnceVault",
     eyeShow:"Zobrazit tajemství",eyeHide:"Skrýt tajemství",durAria:"Vyprší za",
-    copy:"Kopírovat",close:"Zavřít",
+    copy:"Kopírovat",close:"Zavřít",copied:"Zkopírováno do schránky",copyFailed:"Kopírování se nezdařilo",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNoCryptoDec:"dešifrování není k dispozici — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
@@ -587,7 +604,7 @@ try{
   da:{name:"Dansk",secret:"Besked",encrypt:"Kryptér",generate:"Generer hemmelighed",lang:"Sprog",
     theme:"Tema: system → mørkt → lyst",help:"Om OnceVault",
     eyeShow:"Vis hemmelighed",eyeHide:"Skjul hemmelighed",durAria:"Udløber efter",
-    copy:"Kopiér",close:"Luk",
+    copy:"Kopiér",close:"Luk",copied:"Kopieret til udklipsholder",copyFailed:"Kopiering mislykkedes",
     dur:["1 t","4 t","8 t","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"kryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
     errNoCryptoDec:"dekryptering utilgængelig — OnceVault kræver HTTPS (sikker kontekst)",
@@ -618,7 +635,7 @@ try{
   de:{name:"Deutsch",secret:"Nachricht",encrypt:"Verschlüsseln",generate:"Geheimnis generieren",lang:"Sprache",
     theme:"Design: System → Dunkel → Hell",help:"Über OnceVault",
     eyeShow:"Geheimnis anzeigen",eyeHide:"Geheimnis verbergen",durAria:"Läuft ab nach",
-    copy:"Kopieren",close:"Schließen",
+    copy:"Kopieren",close:"Schließen",copied:"In die Zwischenablage kopiert",copyFailed:"Kopieren fehlgeschlagen",
     dur:["1 Std","4 Std","8 Std","1 Tag","2 Tage","5 Tage","7 Tage"],
     errNoCryptoEnc:"Verschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
     errNoCryptoDec:"Entschlüsselung nicht verfügbar — OnceVault benötigt HTTPS (sicherer Kontext)",
@@ -649,7 +666,7 @@ try{
   el:{name:"Ελληνικά",secret:"Μήνυμα",encrypt:"Κρυπτογράφηση",generate:"Δημιουργία μυστικού",lang:"Γλώσσα",
     theme:"Θέμα: σύστημα → σκούρο → ανοιχτό",help:"Σχετικά με το OnceVault",
     eyeShow:"Εμφάνιση μυστικού",eyeHide:"Απόκρυψη μυστικού",durAria:"Λήγει μετά από",
-    copy:"Αντιγραφή",close:"Κλείσιμο",
+    copy:"Αντιγραφή",close:"Κλείσιμο",copied:"Αντιγράφηκε στο πρόχειρο",copyFailed:"Η αντιγραφή απέτυχε",
     dur:["1 ώ","4 ώ","8 ώ","1 ημ","2 ημ","5 ημ","7 ημ"],
     errNoCryptoEnc:"η κρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
     errNoCryptoDec:"η αποκρυπτογράφηση δεν είναι διαθέσιμη — το OnceVault απαιτεί HTTPS (ασφαλές περιβάλλον)",
@@ -680,7 +697,7 @@ try{
   es:{name:"Español",secret:"Mensaje",encrypt:"Cifrar",generate:"Generar secreto",lang:"Idioma",
     theme:"Tema: sistema → oscuro → claro",help:"Acerca de OnceVault",
     eyeShow:"Mostrar el secreto",eyeHide:"Ocultar el secreto",durAria:"Caduca tras",
-    copy:"Copiar",close:"Cerrar",
+    copy:"Copiar",close:"Cerrar",copied:"Copiado al portapapeles",copyFailed:"Error al copiar",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"cifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
     errNoCryptoDec:"descifrado no disponible — OnceVault requiere HTTPS (contexto seguro)",
@@ -711,7 +728,7 @@ try{
   et:{name:"Eesti",secret:"Sõnum",encrypt:"Krüpteeri",generate:"Loo saladus",lang:"Keel",
     theme:"Teema: süsteem → tume → hele",help:"OnceVaultist",
     eyeShow:"Näita saladust",eyeHide:"Peida saladus",durAria:"Aegub pärast",
-    copy:"Kopeeri",close:"Sulge",
+    copy:"Kopeeri",close:"Sulge",copied:"Kopeeritud lõikelauale",copyFailed:"Kopeerimine ebaõnnestus",
     dur:["1 t","4 t","8 t","1 p","2 p","5 p","7 p"],
     errNoCryptoEnc:"krüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
     errNoCryptoDec:"dekrüpteerimine pole saadaval — OnceVault vajab HTTPS-i (turvaline kontekst)",
@@ -742,7 +759,7 @@ try{
   fi:{name:"Suomi",secret:"Viesti",encrypt:"Salaa",generate:"Luo salaisuus",lang:"Kieli",
     theme:"Teema: järjestelmä → tumma → vaalea",help:"Tietoja OnceVaultista",
     eyeShow:"Näytä salaisuus",eyeHide:"Piilota salaisuus",durAria:"Vanhenee",
-    copy:"Kopioi",close:"Sulje",
+    copy:"Kopioi",close:"Sulje",copied:"Kopioitu leikepöydälle",copyFailed:"Kopiointi epäonnistui",
     dur:["1 t","4 t","8 t","1 pv","2 pv","5 pv","7 pv"],
     errNoCryptoEnc:"salaus ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
     errNoCryptoDec:"salauksen purku ei ole käytettävissä — OnceVault vaatii HTTPS:n (suojattu konteksti)",
@@ -773,7 +790,7 @@ try{
   fr:{name:"Français",secret:"Message",encrypt:"Chiffrer",generate:"Générer un secret",lang:"Langue",
     theme:"Thème : système → sombre → clair",help:"À propos d'OnceVault",
     eyeShow:"Afficher le secret",eyeHide:"Masquer le secret",durAria:"Expire après",
-    copy:"Copier",close:"Fermer",
+    copy:"Copier",close:"Fermer",copied:"Copié dans le presse-papiers",copyFailed:"Échec de la copie",
     dur:["1 h","4 h","8 h","1 j","2 j","5 j","7 j"],
     errNoCryptoEnc:"chiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
     errNoCryptoDec:"déchiffrement indisponible — OnceVault nécessite HTTPS (contexte sécurisé)",
@@ -804,7 +821,7 @@ try{
   ga:{name:"Gaeilge",secret:"Teachtaireacht",encrypt:"Criptigh",generate:"Gin rún",lang:"Teanga",
     theme:"Téama: córas → dorcha → geal",help:"Maidir le OnceVault",
     eyeShow:"Taispeáin an rún",eyeHide:"Folaigh an rún",durAria:"Éagann tar éis",
-    copy:"Cóipeáil",close:"Dún",
+    copy:"Cóipeáil",close:"Dún",copied:"Cóipeáladh chuig an ngearrthaisce",copyFailed:"Theip ar an gcóipeáil",
     dur:["1 u","4 u","8 u","1 lá","2 lá","5 lá","7 lá"],
     errNoCryptoEnc:"níl criptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
     errNoCryptoDec:"níl díchriptiú ar fáil — teastaíonn HTTPS ó OnceVault (comhthéacs slán)",
@@ -835,7 +852,7 @@ try{
   hr:{name:"Hrvatski",secret:"Poruka",encrypt:"Šifriraj",generate:"Generiraj tajnu",lang:"Jezik",
     theme:"Tema: sustav → tamna → svijetla",help:"O OnceVaultu",
     eyeShow:"Prikaži tajnu",eyeHide:"Sakrij tajnu",durAria:"Istječe nakon",
-    copy:"Kopiraj",close:"Zatvori",
+    copy:"Kopiraj",close:"Zatvori",copied:"Kopirano u međuspremnik",copyFailed:"Kopiranje nije uspjelo",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
     errNoCryptoDec:"dešifriranje nije dostupno — OnceVault zahtijeva HTTPS (siguran kontekst)",
@@ -866,7 +883,7 @@ try{
   hu:{name:"Magyar",secret:"Üzenet",encrypt:"Titkosítás",generate:"Titok generálása",lang:"Nyelv",
     theme:"Téma: rendszer → sötét → világos",help:"A OnceVaultról",
     eyeShow:"Titok megjelenítése",eyeHide:"Titok elrejtése",durAria:"Lejár ennyi után",
-    copy:"Másolás",close:"Bezárás",
+    copy:"Másolás",close:"Bezárás",copied:"Vágólapra másolva",copyFailed:"A másolás sikertelen",
     dur:["1 ó","4 ó","8 ó","1 nap","2 nap","5 nap","7 nap"],
     errNoCryptoEnc:"a titkosítás nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
     errNoCryptoDec:"a visszafejtés nem érhető el — a OnceVaulthoz HTTPS kell (biztonságos környezet)",
@@ -897,7 +914,7 @@ try{
   it:{name:"Italiano",secret:"Messaggio",encrypt:"Cifra",generate:"Genera segreto",lang:"Lingua",
     theme:"Tema: sistema → scuro → chiaro",help:"Informazioni su OnceVault",
     eyeShow:"Mostra il segreto",eyeHide:"Nascondi il segreto",durAria:"Scade dopo",
-    copy:"Copia",close:"Chiudi",
+    copy:"Copia",close:"Chiudi",copied:"Copiato negli appunti",copyFailed:"Copia non riuscita",
     dur:["1 h","4 h","8 h","1 g","2 g","5 g","7 g"],
     errNoCryptoEnc:"cifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
     errNoCryptoDec:"decifratura non disponibile — OnceVault richiede HTTPS (contesto sicuro)",
@@ -928,7 +945,7 @@ try{
   lt:{name:"Lietuvių",secret:"Žinutė",encrypt:"Šifruoti",generate:"Generuoti paslaptį",lang:"Kalba",
     theme:"Tema: sistema → tamsi → šviesi",help:"Apie OnceVault",
     eyeShow:"Rodyti paslaptį",eyeHide:"Slėpti paslaptį",durAria:"Galioja iki",
-    copy:"Kopijuoti",close:"Uždaryti",
+    copy:"Kopijuoti",close:"Uždaryti",copied:"Nukopijuota į iškarpinę",copyFailed:"Kopijuoti nepavyko",
     dur:["1 val","4 val","8 val","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
     errNoCryptoDec:"iššifravimas nepasiekiamas — OnceVault reikalauja HTTPS (saugaus konteksto)",
@@ -959,7 +976,7 @@ try{
   lv:{name:"Latviešu",secret:"Ziņojums",encrypt:"Šifrēt",generate:"Ģenerēt noslēpumu",lang:"Valoda",
     theme:"Motīvs: sistēma → tumšs → gaišs",help:"Par OnceVault",
     eyeShow:"Rādīt noslēpumu",eyeHide:"Slēpt noslēpumu",durAria:"Beidzas pēc",
-    copy:"Kopēt",close:"Aizvērt",
+    copy:"Kopēt",close:"Aizvērt",copied:"Nokopēts starpliktuvē",copyFailed:"Kopēšana neizdevās",
     dur:["1 st","4 st","8 st","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
     errNoCryptoDec:"atšifrēšana nav pieejama — OnceVault nepieciešams HTTPS (drošs konteksts)",
@@ -990,7 +1007,7 @@ try{
   mt:{name:"Malti",secret:"Messaġġ",encrypt:"Ikkriptja",generate:"Iġġenera sigriet",lang:"Lingwa",
     theme:"Tema: sistema → skura → ċara",help:"Dwar OnceVault",
     eyeShow:"Uri s-sigriet",eyeHide:"Aħbi s-sigriet",durAria:"Jiskadi wara",
-    copy:"Ikkopja",close:"Agħlaq",
+    copy:"Ikkopja",close:"Agħlaq",copied:"Ikkopjat fil-clipboard",copyFailed:"Il-kopja falliet",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"il-kriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
     errNoCryptoDec:"id-dekriptaġġ mhux disponibbli — OnceVault jeħtieġ HTTPS (kuntest sigur)",
@@ -1021,7 +1038,7 @@ try{
   nl:{name:"Nederlands",secret:"Bericht",encrypt:"Versleutelen",generate:"Geheim genereren",lang:"Taal",
     theme:"Thema: systeem → donker → licht",help:"Over OnceVault",
     eyeShow:"Geheim tonen",eyeHide:"Geheim verbergen",durAria:"Verloopt na",
-    copy:"Kopiëren",close:"Sluiten",
+    copy:"Kopiëren",close:"Sluiten",copied:"Gekopieerd naar klembord",copyFailed:"Kopiëren mislukt",
     dur:["1 u","4 u","8 u","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"versleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
     errNoCryptoDec:"ontsleuteling niet beschikbaar — OnceVault vereist HTTPS (beveiligde context)",
@@ -1052,7 +1069,7 @@ try{
   pl:{name:"Polski",secret:"Wiadomość",encrypt:"Zaszyfruj",generate:"Wygeneruj sekret",lang:"Język",
     theme:"Motyw: systemowy → ciemny → jasny",help:"O OnceVault",
     eyeShow:"Pokaż sekret",eyeHide:"Ukryj sekret",durAria:"Wygasa po",
-    copy:"Kopiuj",close:"Zamknij",
+    copy:"Kopiuj",close:"Zamknij",copied:"Skopiowano do schowka",copyFailed:"Kopiowanie nie powiodło się",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"szyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
     errNoCryptoDec:"odszyfrowanie niedostępne — OnceVault wymaga HTTPS (bezpiecznego kontekstu)",
@@ -1083,7 +1100,7 @@ try{
   pt:{name:"Português",secret:"Mensagem",encrypt:"Cifrar",generate:"Gerar segredo",lang:"Idioma",
     theme:"Tema: sistema → escuro → claro",help:"Sobre o OnceVault",
     eyeShow:"Mostrar o segredo",eyeHide:"Ocultar o segredo",durAria:"Expira após",
-    copy:"Copiar",close:"Fechar",
+    copy:"Copiar",close:"Fechar",copied:"Copiado para a área de transferência",copyFailed:"Falha ao copiar",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"cifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
     errNoCryptoDec:"decifra indisponível — o OnceVault requer HTTPS (contexto seguro)",
@@ -1114,7 +1131,7 @@ try{
   ro:{name:"Română",secret:"Mesaj",encrypt:"Criptează",generate:"Generează secret",lang:"Limbă",
     theme:"Temă: sistem → întunecată → luminoasă",help:"Despre OnceVault",
     eyeShow:"Arată secretul",eyeHide:"Ascunde secretul",durAria:"Expiră după",
-    copy:"Copiază",close:"Închide",
+    copy:"Copiază",close:"Închide",copied:"Copiat în clipboard",copyFailed:"Copierea a eșuat",
     dur:["1 h","4 h","8 h","1 zi","2 zile","5 zile","7 zile"],
     errNoCryptoEnc:"criptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
     errNoCryptoDec:"decriptarea nu este disponibilă — OnceVault necesită HTTPS (context securizat)",
@@ -1145,7 +1162,7 @@ try{
   sk:{name:"Slovenčina",secret:"Správa",encrypt:"Zašifrovať",generate:"Vygenerovať tajomstvo",lang:"Jazyk",
     theme:"Motív: systém → tmavý → svetlý",help:"O OnceVault",
     eyeShow:"Zobraziť tajomstvo",eyeHide:"Skryť tajomstvo",durAria:"Vyprší o",
-    copy:"Kopírovať",close:"Zavrieť",
+    copy:"Kopírovať",close:"Zavrieť",copied:"Skopírované do schránky",copyFailed:"Kopírovanie zlyhalo",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
     errNoCryptoDec:"dešifrovanie nie je k dispozícii — OnceVault vyžaduje HTTPS (zabezpečený kontext)",
@@ -1176,7 +1193,7 @@ try{
   sl:{name:"Slovenščina",secret:"Sporočilo",encrypt:"Šifriraj",generate:"Ustvari skrivnost",lang:"Jezik",
     theme:"Tema: sistem → temna → svetla",help:"O OnceVaultu",
     eyeShow:"Pokaži skrivnost",eyeHide:"Skrij skrivnost",durAria:"Poteče čez",
-    copy:"Kopiraj",close:"Zapri",
+    copy:"Kopiraj",close:"Zapri",copied:"Kopirano v odložišče",copyFailed:"Kopiranje ni uspelo",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"šifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
     errNoCryptoDec:"dešifriranje ni na voljo — OnceVault zahteva HTTPS (varen kontekst)",
@@ -1207,7 +1224,7 @@ try{
   sv:{name:"Svenska",secret:"Meddelande",encrypt:"Kryptera",generate:"Generera hemlighet",lang:"Språk",
     theme:"Tema: system → mörkt → ljust",help:"Om OnceVault",
     eyeShow:"Visa hemlighet",eyeHide:"Dölj hemlighet",durAria:"Upphör efter",
-    copy:"Kopiera",close:"Stäng",
+    copy:"Kopiera",close:"Stäng",copied:"Kopierat till urklipp",copyFailed:"Kopiering misslyckades",
     dur:["1 h","4 h","8 h","1 d","2 d","5 d","7 d"],
     errNoCryptoEnc:"kryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
     errNoCryptoDec:"dekryptering otillgänglig — OnceVault kräver HTTPS (säker kontext)",
@@ -1238,7 +1255,7 @@ try{
   tr:{name:"Türkçe",secret:"Mesaj",encrypt:"Şifrele",generate:"Gizli oluştur",lang:"Dil",
     theme:"Tema: sistem → koyu → açık",help:"OnceVault hakkında",
     eyeShow:"Gizliyi göster",eyeHide:"Gizliyi gizle",durAria:"Şu süre sonra sona erer",
-    copy:"Kopyala",close:"Kapat",
+    copy:"Kopyala",close:"Kapat",copied:"Panoya kopyalandı",copyFailed:"Kopyalama başarısız",
     dur:["1 sa","4 sa","8 sa","1 g","2 g","5 g","7 g"],
     errNoCryptoEnc:"şifreleme kullanılamıyor — OnceVault HTTPS (güvenli bağlam) gerektirir",
     errNoCryptoDec:"şifre çözme kullanılamıyor — OnceVault HTTPS (güvenli bağlam) gerektirir",
@@ -1269,7 +1286,7 @@ try{
   ko:{name:"한국어",secret:"메시지",encrypt:"암호화",generate:"비밀 생성",lang:"언어",
     theme:"테마: 시스템 → 다크 → 라이트",help:"OnceVault 정보",
     eyeShow:"비밀 표시",eyeHide:"비밀 숨기기",durAria:"만료 시점",
-    copy:"복사",close:"닫기",
+    copy:"복사",close:"닫기",copied:"클립보드에 복사됨",copyFailed:"복사 실패",
     dur:["1시간","4시간","8시간","1일","2일","5일","7일"],
     errNoCryptoEnc:"암호화를 사용할 수 없습니다 — OnceVault는 HTTPS(보안 컨텍스트)가 필요합니다",
     errNoCryptoDec:"복호화를 사용할 수 없습니다 — OnceVault는 HTTPS(보안 컨텍스트)가 필요합니다",
@@ -1300,7 +1317,7 @@ try{
   zh:{name:"中文",secret:"消息",encrypt:"加密",generate:"生成秘密",lang:"语言",
     theme:"主题：系统 → 深色 → 浅色",help:"关于 OnceVault",
     eyeShow:"显示秘密",eyeHide:"隐藏秘密",durAria:"有效期",
-    copy:"复制",close:"关闭",
+    copy:"复制",close:"关闭",copied:"已复制到剪贴板",copyFailed:"复制失败",
     dur:["1小时","4小时","8小时","1天","2天","5天","7天"],
     errNoCryptoEnc:"无法加密 — OnceVault 需要 HTTPS（安全上下文）",
     errNoCryptoDec:"无法解密 — OnceVault 需要 HTTPS（安全上下文）",
@@ -1421,11 +1438,22 @@ try{
     resetUrl();
     input.focus();
   });
+  /* ---- copy toast: brief status pill + aria-live announcement, on top of
+     the icon swap already on each copy button ---- */
+  var toastTimer=null;
+  function showToast(msg,isError){
+    clearTimeout(toastTimer);
+    toast.textContent=msg;
+    toast.classList.toggle('toast-error',!!isError);
+    toast.classList.add('show');
+    toastTimer=setTimeout(function(){ toast.classList.remove('show'); },2000);
+  }
   copyBtn.addEventListener('click',function(){
     navigator.clipboard.writeText(outText.textContent).then(function(){
       iCopy.hidden=true; iCheck.hidden=false;
       setTimeout(function(){ iCopy.hidden=false; iCheck.hidden=true; },1200);
-    }).catch(function(){});
+      showToast(tr('copied'));
+    }).catch(function(){ showToast(tr('copyFailed'),true); });
   });
 
   /* ---- eye toggle: masking = transparent glyphs + dot mirror in #mask ---- */
@@ -1447,7 +1475,8 @@ try{
     navigator.clipboard.writeText(input.value).then(function(){
       iCopyIn.hidden=true; iCheckIn.hidden=false;
       setTimeout(function(){ iCopyIn.hidden=false; iCheckIn.hidden=true; },1200);
-    }).catch(function(){});
+      showToast(tr('copied'));
+    }).catch(function(){ showToast(tr('copyFailed'),true); });
     input.focus();
   }
   copyInBtn.addEventListener('click',copyInputAll);
